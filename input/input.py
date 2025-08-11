@@ -9,9 +9,8 @@ from tqdm import tqdm
 import pandas as pd
 from pandas import DataFrame
 
-from common.common import CoinType, Exchange
+from common.common import CoinType, Exchange, BASE_DIR
 
-BASE_DIR = "/Users/scharlip/Desktop/crypto-predict/data/"
 WINDOWS_PER_FILE = 20000
 
 def cleanup_temp_dir(path):
@@ -85,11 +84,14 @@ class CoinDataset(Dataset):
 
         midpoints = (self.df["High"] + self.df["Low"]) / 2
 
-        print("Extracting midpoint windows into '{}/midpoints' ...".format(self.scratch_dir))
+        dir = "{}/midpoints/{}_{}/".format(self.scratch_dir, str(self.coin_type), str(self.exchange))
+
+        print("Extracting midpoint windows into '{}' ...".format(dir))
+
         filenum = 0
         count = 0
-        os.makedirs("{}/midpoints".format(self.scratch_dir), exist_ok=True)
-        file = open("{}/midpoints/{}.txt".format(self.scratch_dir, filenum), "w+")
+        os.makedirs(dir, exist_ok=True)
+        file = open("{}/{}.txt".format(dir, filenum), "w+")
         for window in tqdm(midpoints.rolling(window=self.lookback + 1)):
             if len(window) < self.lookback + 1:
                 continue
@@ -102,7 +104,7 @@ class CoinDataset(Dataset):
                 file.close()
 
                 filenum += 1
-                file = open("{}/midpoints/{}.txt".format(self.scratch_dir, filenum), "w+")
+                file = open("{}/{}.txt".format(dir, filenum), "w+")
 
         file.flush()
         file.close()
