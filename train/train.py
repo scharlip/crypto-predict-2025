@@ -12,7 +12,16 @@ from models.models import SimpleLSTMModel
 
 ds = CoinDataset(coin_type=CoinType.ETH,exchange=Exchange.Coinbase)
 ds.generate_midpoint_windows()
-train, validate, test = torch.utils.data.random_split(ds, [0.8, 0.05, 0.15])
+#train, validate, test = torch.utils.data.random_split(ds, [0.8, 0.05, 0.15])
+
+total_samples = len(ds)
+train_samples = int(total_samples * 0.8)
+validation_samples = int(total_samples * 0.05)
+test_samples = int(total_samples * 0.15)
+
+train = torch.utils.data.Subset(ds, range(train_samples))
+validate = torch.utils.data.Subset(ds, range(train_samples, train_samples + validation_samples))
+test = torch.utils.data.Subset(ds, range(train_samples + validation_samples, total_samples))
 
 '''
 if torch.backends.mps.is_available():
@@ -27,11 +36,11 @@ device = torch.device("cpu")
 
 torch.set_num_threads(8)
 
-model = SimpleLSTMModel(input_size=60, device=device).to(device)
+model = SimpleLSTMModel(input_size=ds.lookback_window_size, device=device).to(device)
 optimizer = optim.Adam(model.parameters())
 loss_fn = nn.MSELoss()
-train_loader = data.DataLoader(train, shuffle=True, batch_size=32)
-validation_loader = data.DataLoader(validate, shuffle=True, batch_size=32)
+train_loader = data.DataLoader(train, shuffle=False, batch_size=32)
+validation_loader = data.DataLoader(validate, shuffle=False, batch_size=32)
 
 n_epochs = 200
 
