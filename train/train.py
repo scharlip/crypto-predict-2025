@@ -5,32 +5,14 @@ import torch
 from tqdm import tqdm
 import numpy as np
 import statistics
+import math
 
 from common.common import CoinType, Exchange
 from input.input import CoinDataset
 from models.models import SimpleLSTMModel
 
 ds = CoinDataset(coin_type=CoinType.ETH,exchange=Exchange.Coinbase)
-ds.generate_midpoint_windows()
-#train, validate, test = torch.utils.data.random_split(ds, [0.8, 0.05, 0.15])
-
-total_samples = len(ds)
-train_samples = int(total_samples * 0.8)
-validation_samples = int(total_samples * 0.05)
-test_samples = int(total_samples * 0.15)
-
-train = torch.utils.data.Subset(ds, range(train_samples))
-validate = torch.utils.data.Subset(ds, range(train_samples, train_samples + validation_samples))
-test = torch.utils.data.Subset(ds, range(train_samples + validation_samples, total_samples))
-
-'''
-if torch.backends.mps.is_available():
-    device = torch.device("mps")
-    print("MPS backend is available and will be used.")
-else:
-    device = torch.device("cpu")
-    print("MPS backend not available, falling back to CPU.")
-'''
+train, validate, test = torch.utils.data.random_split(ds, [0.8, 0.05, 0.15])
 
 device = torch.device("cpu")
 
@@ -49,7 +31,7 @@ for epoch in range(n_epochs):
 
     print("Starting training for epoch {} ...".format(epoch))
 
-    errors = []
+    train_errors = []
     model.train()
     for X_batch, y_batch in tqdm(train_loader):
         X_batch = X_batch.to(device)
@@ -58,13 +40,14 @@ for epoch in range(n_epochs):
         y_pred = model(X_batch)
         y_pred = y_pred.squeeze()
         loss = loss_fn(y_pred, y_batch)
+        train_errors.append(math.sqrt(loss))
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
     print("Completed training for epoch {}.".format(epoch))
 
-    errors = []
+    validation_errors = []
 
     print("Starting validation for epoch {} ...".format(epoch))
 
@@ -76,12 +59,14 @@ for epoch in range(n_epochs):
 
             y_pred = model(X_batch)
             y_pred = y_pred.squeeze()
-            rmse = np.sqrt(loss_fn(y_pred, y_batch))
-            errors.append(rmse)
+            rmse = math.sqrt(loss_fn(y_pred, y_batch))
+            validation_errors.append(rmse)
 
-    avg_error = statistics.fmean(errors)
+    avg_train_error = statistics.fmean(train_errors)
+    avg_validation_error = statistics.fmean(validation_errors)
 
-    print("Completed validation for epoch {}. Avg RMSE: {}".format(epoch, avg_error))
+    print("Completed validation for epoch {}. Avg training RMSE/batch: {}, Avg validation RMSE/batch: {}".format(
+        epoch, avg_train_error, avg_validation_error))
 
     print("Done with epoch {}.".format(epoch))
 
