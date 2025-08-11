@@ -13,13 +13,13 @@ class CoinDataset:
                  exchange: Exchange,
                  limit=None,
                  interpolate_missing_data: bool = True,
-                 lookback_window_size: int = 60,
+                 window_size: int = 60,
                  ):
         self.coin_type = coin_type
         self.exchange = exchange
         self.limit = limit
         self.interpolate_missing_data = interpolate_missing_data
-        self.lookback_window_size = lookback_window_size
+        self.window_size = window_size
         self.df = self.__read_csv(coin_type, exchange, interpolate_missing_data, limit)
 
     def __read_csv(self, coin_type: CoinType, exchange: Exchange, interpolate_missing_data: bool = True, limit: int = None) -> DataFrame:
@@ -75,17 +75,17 @@ class MidpointCoinDataset(CoinDataset, Dataset):
                  exchange: Exchange,
                  limit=None,
                  interpolate_missing_data: bool = True,
-                 lookback_window_size: int = 60):
-        super().__init__(coin_type, exchange, limit, interpolate_missing_data, lookback_window_size)
+                 window_size: int = 60):
+        super().__init__(coin_type, exchange, limit, interpolate_missing_data, window_size)
 
     def __len__(self):
-        return len(self.df) - self.lookback_window_size - 1
+        return len(self.df) - self.window_size - 1
 
     def __getitem__(self, item):
         if item > len(self.df):
             raise IndexError('index out of range')
 
-        X = self.df[item : item + self.lookback_window_size]["Midpoint"].tolist()
-        y = self.df.iloc[item + self.lookback_window_size + 1]["Midpoint"].tolist()
+        X = self.df[item : item + self.window_size]["Midpoint"].tolist()
+        y = self.df.iloc[item + self.window_size + 1]["Midpoint"].tolist()
 
         return torch.tensor(X), torch.tensor(y)
