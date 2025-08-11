@@ -1,73 +1,104 @@
-import torch.optim as optim
+from typing import List
+
 import torch.utils.data as data
 import torch.nn as nn
 import torch
+from torch.nn.modules.loss import _Loss
+from torch.optim import Optimizer
 from tqdm import tqdm
-import numpy as np
 import statistics
 import math
 
-from common.common import CoinType, Exchange
 from input.input import CoinDataset
-from models.models import SimpleLSTMModel
 
-ds = CoinDataset(coin_type=CoinType.ETH,exchange=Exchange.Coinbase)
-train, validate, test = torch.utils.data.random_split(ds, [0.8, 0.05, 0.15])
+def train_loop(
+        ds: CoinDataset,
+        model: nn.Module,
+        device,
+        optimizer: Optimizer,
+        loss_fn: _Loss = nn.MSELoss,
+        splits: List[float] = [0.8, 0.05, 0.15],
+        batch_size = 32,
+        epochs = 200
+):
+    train, validate, test = torch.utils.data.random_split(ds, splits)
 
-device = torch.device("cpu")
+    train_loader = data.DataLoader(train, shuffle=False, batch_size=batch_size)
+    validation_loader = data.DataLoader(validate, shuffle=False, batch_size=batch_size)
+    test_loader = data.DataLoader(test, shuffle=False, batch_size=32)
 
-torch.set_num_threads(8)
+    print("Beginning training loop.")
+    print("Model:")
+    print(model)
+    print("Optimizer: {}".format(optimizer))
+    print("Loss function: {}".format(loss_fn))
+    print("Batch size: {}".format(batch_size))
+    print("Splits: {}".format(splits))
+    print("Epochs: {}".format(epochs))
 
-model = SimpleLSTMModel(input_size=ds.lookback_window_size, device=device).to(device)
-optimizer = optim.Adam(model.parameters())
-loss_fn = nn.MSELoss()
-train_loader = data.DataLoader(train, shuffle=False, batch_size=32)
-validation_loader = data.DataLoader(validate, shuffle=False, batch_size=32)
+    for epoch in range(epochs):
+        print("Starting epoch {} ...".format(epoch))
 
-n_epochs = 200
+        print("Starting training for epoch {} ...".format(epoch))
 
-for epoch in range(n_epochs):
-    print("Starting epoch {} ...".format(epoch))
+        train_errors = []
+        model.train()
+        for X_batch, y_batch in tqdm(train_loader):
+            X_batch = X_batch.to(device)
+            y_batch = y_batch.to(device)
 
-    print("Starting training for epoch {} ...".format(epoch))
+            y_pred = model(X_batch)
+            y_pred = y_pred.squeeze()
+            loss = loss_fn(y_pred, y_batch)
+            train_errors.append(math.sqrt(loss))
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
 
-    train_errors = []
-    model.train()
-    for X_batch, y_batch in tqdm(train_loader):
-        X_batch = X_batch.to(device)
-        y_batch = y_batch.to(device)
+        print("Completed training for epoch {}.".format(epoch))
 
-        y_pred = model(X_batch)
-        y_pred = y_pred.squeeze()
-        loss = loss_fn(y_pred, y_batch)
-        train_errors.append(math.sqrt(loss))
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+        validation_errors = []
 
-    print("Completed training for epoch {}.".format(epoch))
+        print("Starting validation for epoch {} ...".format(epoch))
 
-    validation_errors = []
+        model.eval()
+        with torch.no_grad():
+            for X_batch, y_batch in tqdm(validation_loader):
+                X_batch = X_batch.to(device)
+                y_batch = y_batch.to(device)
 
-    print("Starting validation for epoch {} ...".format(epoch))
+                y_pred = model(X_batch)
+                y_pred = y_pred.squeeze()
+                rmse = math.sqrt(loss_fn(y_pred, y_batch))
+                validation_errors.append(rmse)
+
+        avg_train_error = statistics.fmean(train_errors)
+        avg_validation_error = statistics.fmean(validation_errors)
+
+        print("Completed validation for epoch {}. Avg training RMSE: {} (per batch: {}), Avg validation RMSE: {} (per batch: {})".format(
+            epoch, avg_train_error/batch_size, avg_train_error, avg_validation_error/batch_size, avg_validation_error))
+
+        print("Done with epoch {}.".format(epoch))
+
+    test_errors = []
 
     model.eval()
     with torch.no_grad():
-        for X_batch, y_batch in tqdm(validation_loader):
+        for X_batch, y_batch in tqdm(test_loader):
             X_batch = X_batch.to(device)
             y_batch = y_batch.to(device)
 
             y_pred = model(X_batch)
             y_pred = y_pred.squeeze()
             rmse = math.sqrt(loss_fn(y_pred, y_batch))
-            validation_errors.append(rmse)
+            test_errors.append(rmse)
 
-    avg_train_error = statistics.fmean(train_errors)
-    avg_validation_error = statistics.fmean(validation_errors)
+    avg_test_error = statistics.fmean(test_errors)
+    print(
+        "Completed test. Avg test RMSE: {} (per batch: {})".format(
+            avg_test_error / batch_size, avg_test_error
+        )
+    )
 
-    print("Completed validation for epoch {}. Avg training RMSE/batch: {}, Avg validation RMSE/batch: {}".format(
-        epoch, avg_train_error, avg_validation_error))
+    print("Completed training loop.")
 
-    print("Done with epoch {}.".format(epoch))
-
-# TODO: run test

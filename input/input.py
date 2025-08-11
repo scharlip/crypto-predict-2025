@@ -6,9 +6,11 @@ from pandas import DataFrame
 
 from common.common import CoinType, Exchange, BASE_DIR
 
-class CoinDataset(Dataset):
+class CoinDataset:
 
-    def __init__(self, coin_type: CoinType, exchange: Exchange,
+    def __init__(self,
+                 coin_type: CoinType,
+                 exchange: Exchange,
                  limit=None,
                  interpolate_missing_data: bool = True,
                  lookback_window_size: int = 60,
@@ -65,7 +67,17 @@ class CoinDataset(Dataset):
             return ret.head(limit)
         else:
             return ret
-        
+
+class MidpointCoinDataset(CoinDataset, Dataset):
+
+    def __init__(self,
+                 coin_type: CoinType,
+                 exchange: Exchange,
+                 limit=None,
+                 interpolate_missing_data: bool = True,
+                 lookback_window_size: int = 60):
+        super().__init__(coin_type, exchange, limit, interpolate_missing_data, lookback_window_size)
+
     def __len__(self):
         return len(self.df) - self.lookback_window_size - 1
 
