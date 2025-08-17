@@ -1,19 +1,10 @@
-import torch
-from torch import optim, nn
-
+from backtest.backtest import run_backtest
 from common.common import CoinType, Exchange
 from input.input import MidpointCoinDataset
-from models.base import SimpleLSTMModel
-from train.train import train_loop
+from models.NoisySourcePredictorModel import NoisySourceMidpointPredictorModel
+from models.PerfectMidpointPredictorModel import PerfectMidpointPredictorModel
 
 ds = MidpointCoinDataset(coin_type=CoinType.ETH, exchange=Exchange.Coinbase)
-device = torch.device("cpu")
-model = SimpleLSTMModel(input_size=ds.lookback_window_size, device=device)
+model = PerfectMidpointPredictorModel(ds, 0.02, 60)
 
-train_loop(
-    ds=ds,
-    model=model,
-    device=device,
-    optimizer=optim.Adam(model.parameters()),
-    loss_fn = nn.MSELoss()
-)
+profit = run_backtest(ds, model)

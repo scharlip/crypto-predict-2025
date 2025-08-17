@@ -4,14 +4,15 @@ from typing import List, Tuple
 from pandas import DataFrame
 
 from input.input import MidpointCoinDataset
-from models.PerfectMidpointPredictorModel import PerfectMidpointPredictorModel
-from models.base import TransctionType
+from models.MidpointModelPredictor import MidpointPredictorModel
+from models.BaseModel import TransctionType
 import random
 
-class NoisySourceMidpointPredictorModel(PerfectMidpointPredictorModel):
+class NoisySourceMidpointPredictorModel(MidpointPredictorModel):
 
     def __init__(self, ds: MidpointCoinDataset, threshold: float, lookahead: int, artificial_noise_pctg: float = 0.01) -> List[float]:
-        super().__init__(ds, threshold, lookahead)
+        super().__init__(threshold, lookahead)
+        self.df = ds.df
         self.add_noise_function = self.__add_noise_function(artificial_noise_pctg)
 
     def __add_noise_function(self, artificial_noise_pctg: float) :
@@ -21,7 +22,9 @@ class NoisySourceMidpointPredictorModel(PerfectMidpointPredictorModel):
         return __noisify
 
     def predict_future_window(self, past_window: DataFrame) -> DataFrame:
-        perfect_prediction_window = super().predict_future_window(past_window).copy()
+        end_timestamp = past_window.iloc[-1]["Open time"]
+        end_index = self.df[self.df["Open time"] == end_timestamp].index.tolist()[0]
+        perfect_prediction_window = self.df[end_index + 1: end_index + self.lookahead + 1].copy()
         perfect_prediction_window["Midpoint"] = perfect_prediction_window["Midpoint"].apply(self.add_noise_function)
         return perfect_prediction_window
 
@@ -33,4 +36,4 @@ class NoisySourceMidpointPredictorModel(PerfectMidpointPredictorModel):
             currently_have_usd: bool) -> Tuple[TransctionType, int]:
 
         future_window = self.predict_future_window(past_window)
-        return super().decision(current_time, past_window, future_window, last_purchased_price, currently_have_usd)
+        return super().decision(current_time, future_window, last_purchased_price, currently_have_usd)

@@ -11,8 +11,9 @@ from input.input import CoinDataset, MidpointCoinDataset
 
 from tqdm import tqdm
 
+from models.NoisySourcePredictorModel import NoisySourceMidpointPredictorModel
 from models.PerfectMidpointPredictorModel import PerfectMidpointPredictorModel
-from models.base import BaseModel, TransctionType
+from models.BaseModel import BaseModel, TransctionType
 
 
 def run_backtest(ds: CoinDataset, model: BaseModel, transaction_fee_pctg = 0.006) -> float:
@@ -84,10 +85,3 @@ def run_backtest(ds: CoinDataset, model: BaseModel, transaction_fee_pctg = 0.006
         else:
             # either hold or not time to buy/sell yet
             pass
-
-
-
-ds = MidpointCoinDataset(coin_type=CoinType.ETH, exchange=Exchange.Coinbase)
-model = PerfectMidpointPredictorModel(ds, 0.02, 60)
-
-profit = run_backtest(ds, model)

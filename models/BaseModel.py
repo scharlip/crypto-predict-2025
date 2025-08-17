@@ -20,4 +20,4 @@ class BaseModel(nn.Module):
             last_purchased_price: float,
             currently_have_usd: bool,
     ) -> Tuple[TransctionType, int]:
-        raise NotImplementedError()
+        raise NotImplementedError("Implemented in subclasses")
