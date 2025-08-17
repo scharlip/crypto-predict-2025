@@ -9,13 +9,12 @@ from models.base import BaseModel, TransctionType
 
 class PerfectMidpointPredictorModel(BaseModel):
 
-    def __init__(self, ds: MidpointCoinDataset, threshold: float, lookahead: int) -> List[float]:
+    def __init__(self, ds: MidpointCoinDataset, threshold: float, lookahead: int):
         self.df = ds.df
         self.threshold = threshold
         self.lookahead = lookahead
-        self.cache = None
 
-    def __predict_future_window(self, past_window: DataFrame) -> DataFrame:
+    def predict_future_window(self, past_window: DataFrame) -> DataFrame:
         end_timestamp = past_window.iloc[-1]["Open time"]
         end_index = self.df[self.df["Open time"] == end_timestamp].index.tolist()[0]
 
@@ -23,15 +22,13 @@ class PerfectMidpointPredictorModel(BaseModel):
 
         return window_df
 
-    def buy_sell_hold_decision(
-            self,
-            current_time: datetime,
-            past_window: DataFrame,
-            last_purchased_price: float,
-            currently_have_usd: bool) -> Tuple[TransctionType, int]:
+    def decision(self,
+                   current_time: datetime,
+                   future_window: DataFrame,
+                   last_purchased_price: float,
+                   currently_have_usd: bool) -> Tuple[TransctionType, int]:
 
         # TODO: cache the window by current_time so that these scans go faster
-        future_window = self.__predict_future_window(past_window)
         min_idx = future_window["Midpoint"].idxmin()
         max_idx = future_window["Midpoint"].idxmax()
         min_value = future_window.loc[min_idx]["Midpoint"].tolist()
@@ -56,6 +53,16 @@ class PerfectMidpointPredictorModel(BaseModel):
             # otherwise do nothing
             else:
                 return (TransctionType.Hold, None)
+
+    def buy_sell_hold_decision(
+            self,
+            current_time: datetime,
+            past_window: DataFrame,
+            last_purchased_price: float,
+            currently_have_usd: bool) -> Tuple[TransctionType, int]:
+
+        future_window = self.predict_future_window(past_window)
+        return self.decision(current_time, past_window, future_window, last_purchased_price, currently_have_usd)
 
     def forward(self, x):
         raise NotImplementedError("This model doesn't get trained.")
