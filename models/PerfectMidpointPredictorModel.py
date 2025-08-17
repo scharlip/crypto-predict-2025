@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from typing import List, Tuple
 
 from pandas import DataFrame
@@ -31,6 +32,7 @@ class PerfectMidpointPredictorModel(BaseModel):
 
     def buy_sell_hold_decision(
             self,
+            current_time: datetime,
             past_window: DataFrame,
             last_purchased_price: float,
             currently_have_usd: bool) -> Tuple[TransctionType, int]:
@@ -53,18 +55,18 @@ class PerfectMidpointPredictorModel(BaseModel):
 
         if currently_have_usd:
             # buy at the predicted minimum if the maximum is more than the minimum + the threshold
-            if max_value > min_value * (1 + self.threshold):
-                return (TransctionType.Buy, min_index)
+            if max_value > min_value * (1 + self.threshold) and max_index > min_index:
+                return (TransctionType.Buy, current_time + timedelta(minutes = min_index))
             else:
                 return (TransctionType.Hold, None)
         else:
             # if we predict a value above the threshold, buy there
             if max_value > last_purchased_price * (1 + self.threshold):
-                return (TransctionType.Sell, max_index)
+                return (TransctionType.Sell, current_time + timedelta(minutes = max_index))
 
             # if we predict a value 3x below the threshold, bail out right now
             elif min_value < last_purchased_price * (1 - 3 * self.threshold):
-                return (TransctionType.Sell, 0)
+                return (TransctionType.Sell, current_time)
             # otherwise do nothing
             else:
                 return (TransctionType.Hold, None)
