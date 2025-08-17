@@ -10,10 +10,12 @@ import statistics
 import math
 
 from input.input import CoinDataset
+from models.BaseModel import BaseModel
+
 
 def train_loop(
         ds: CoinDataset,
-        model: nn.Module,
+        model: BaseModel,
         device,
         optimizer: Optimizer,
         loss_fn: _Loss = nn.MSELoss,

@@ -21,3 +21,6 @@ class BaseModel(nn.Module):
             currently_have_usd: bool,
     ) -> Tuple[TransctionType, int]:
         raise NotImplementedError("Implemented in subclasses")
+
+    def forward(self, x):
+        raise NotImplementedError("Implemented in subclasses")

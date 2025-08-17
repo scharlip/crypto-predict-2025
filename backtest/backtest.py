@@ -1,18 +1,9 @@
-import random
 from datetime import timedelta
-from enum import StrEnum
-from typing import List, Tuple
 
-import torch
-from torch import nn
-
-from common.common import CoinType, Exchange
-from input.input import CoinDataset, MidpointCoinDataset
+from input.input import CoinDataset
 
 from tqdm import tqdm
 
-from models.NoisySourcePredictorModel import NoisySourceMidpointPredictorModel
-from models.PerfectMidpointPredictorModel import PerfectMidpointPredictorModel
 from models.BaseModel import BaseModel, TransctionType
 
 
