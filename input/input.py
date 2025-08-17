@@ -36,25 +36,25 @@ class CoinDataset:
         if len(extraneous_columns) > 0:
             from_csv.drop(columns=extraneous_columns, axis=1, inplace=True)
 
-        from_csv.index = pd.to_datetime(from_csv.index)
+        from_csv["Open time"] = pd.to_datetime(from_csv["Open time"])
 
         missing_data = pd.DataFrame(
             {
                 "Open time": pd.date_range(
-                    start=from_csv.index.min(),
-                    end=from_csv.index.max(),
+                    start=from_csv["Open time"].min(),
+                    end=from_csv["Open time"].max(),
                     freq='min'
-                ).difference(from_csv.index)
+                ).difference(from_csv["Open time"])
             }
         )
 
-        missing_data = missing_data.set_index("Open time")
-        missing_data[from_csv.columns] = np.nan
+        missing_data[from_csv.columns.difference(["Open time"])] = np.nan
         missing_data["Interpolated"] = True
         missing_data["Exchange"] = str(exchange)
 
         ret = pd.concat([from_csv, missing_data])
-        ret.sort_values("Open time", inplace=True)
+
+        ret = ret.sort_values("Open time").reset_index(drop=True)
 
         if interpolate_missing_data:
             ret.interpolate(inplace=True, method='linear')

@@ -3,7 +3,7 @@ from torch import optim, nn
 
 from common.common import CoinType, Exchange
 from input.input import MidpointCoinDataset
-from models.models import SimpleLSTMModel
+from models.base import SimpleLSTMModel
 from train.train import train_loop
 
 ds = MidpointCoinDataset(coin_type=CoinType.ETH, exchange=Exchange.Coinbase)
