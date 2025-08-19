@@ -7,7 +7,7 @@ from tqdm import tqdm
 from models.BaseModel import BaseModel, TransctionType
 
 
-def run_backtest(ds: CoinDataset, model: BaseModel, transaction_fee_pctg = 0.006) -> float:
+def run_backtest(ds: CoinDataset, model: BaseModel, transaction_fee_pctg = 0.006, print_debug_statements = False) -> float:
 
     current_usd_holdings = 100.0
     current_coin_holdings = 0.0
@@ -38,13 +38,14 @@ def run_backtest(ds: CoinDataset, model: BaseModel, transaction_fee_pctg = 0.006
             current_coin_holdings *= (1.0 - transaction_fee_pctg)
             current_usd_holdings = 0.0
 
-            print("Bought coins at a price of {}. USD: {} -> {}, Coin: {} -> {} (Step: {}, Total time elapsed: {})".format(
-                current_price,
-                prev_usd_holdings, current_usd_holdings,
-                prev_coin_holdings, current_coin_holdings,
-                current_idx,
-                str(timedelta(minutes=current_idx)),
-            ))
+            if print_debug_statements:
+                print("\nBought coins at a price of {}. USD: {} -> {}, Coin: {} -> {} (Step: {}, Total time elapsed: {})".format(
+                    current_price,
+                    prev_usd_holdings, current_usd_holdings,
+                    prev_coin_holdings, current_coin_holdings,
+                    current_idx,
+                    str(timedelta(minutes=current_idx)),
+                ))
 
             last_purchased_price = current_price
             last_purchased_time = current_time
@@ -56,20 +57,21 @@ def run_backtest(ds: CoinDataset, model: BaseModel, transaction_fee_pctg = 0.006
             current_usd_holdings *= (1.0 - transaction_fee_pctg)
             current_coin_holdings = 0.0
 
-            if last_purchased_price < current_price*(1 - transaction_fee_pctg):
-                gain_loss_msg = "NET GAIN"
-            else:
-                gain_loss_msg = "NET LOSS"
+            if print_debug_statements:
+                if last_purchased_price < current_price * (1 - transaction_fee_pctg):
+                    gain_loss_msg = "NET GAIN"
+                else:
+                    gain_loss_msg = "NET LOSS"
 
-            print("Sold coins at a price of {}. USD: {} -> {}, Coin: {} -> {} (Held for: {}, Total time elapsed: {}, Step: {}) {}".format(
-                current_price,
-                prev_usd_holdings, current_usd_holdings,
-                prev_coin_holdings, current_coin_holdings,
-                str(current_time - last_purchased_time),
-                str(timedelta(minutes = current_idx)),
-                current_idx,
-                gain_loss_msg
-            ))
+                print("\nSold coins at a price of {}. USD: {} -> {}, Coin: {} -> {} (Held for: {}, Total time elapsed: {}, Step: {}) {}".format(
+                    current_price,
+                    prev_usd_holdings, current_usd_holdings,
+                    prev_coin_holdings, current_coin_holdings,
+                    str(current_time - last_purchased_time),
+                    str(timedelta(minutes = current_idx)),
+                    current_idx,
+                    gain_loss_msg
+                ))
 
             last_purchased_price = None
             last_purchased_time = None

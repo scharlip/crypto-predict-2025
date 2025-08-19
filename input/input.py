@@ -1,3 +1,6 @@
+from datetime import datetime
+from typing import Tuple
+
 import numpy as np
 import torch
 from torch.utils.data import Dataset
@@ -11,18 +14,20 @@ class CoinDataset:
     def __init__(self,
                  coin_type: CoinType,
                  exchange: Exchange,
-                 limit=None,
+                 limit: int = None,
+                 date_range_filter: Tuple[datetime, datetime] = None,
                  interpolate_missing_data: bool = True,
                  window_size: int = 60,
                  ):
         self.coin_type = coin_type
         self.exchange = exchange
         self.limit = limit
+        self.date_range_filter = date_range_filter
         self.interpolate_missing_data = interpolate_missing_data
         self.window_size = window_size
-        self.df = self.__read_csv(coin_type, exchange, interpolate_missing_data, limit)
+        self.df = self.__read_csv(coin_type, exchange, interpolate_missing_data, limit, date_range_filter)
 
-    def __read_csv(self, coin_type: CoinType, exchange: Exchange, interpolate_missing_data: bool = True, limit: int = None) -> DataFrame:
+    def __read_csv(self, coin_type: CoinType, exchange: Exchange, interpolate_missing_data: bool = True, limit: int = None, date_range_filter: Tuple[datetime, datetime] = None) -> DataFrame:
         print("Reading csv for {}/{} ...".format(coin_type, exchange))
 
         csv = "{}/{}/{}USD_1m_{}.csv".format(BASE_DIR, str(coin_type).lower(), str(coin_type), str(exchange))
@@ -63,6 +68,12 @@ class CoinDataset:
 
         print("Read csv for {}/{}.".format(coin_type, exchange))
 
+        if date_range_filter is not None:
+            start = pd.Timestamp(date_range_filter[0])
+            end = pd.Timestamp(date_range_filter[1])
+            ret = ret[(ret["Open time"] >= start) & (ret["Open time"] <= end)]
+            ret = ret.reset_index()
+
         if limit is not None:
             return ret.head(limit)
         else:
@@ -73,10 +84,11 @@ class MidpointCoinDataset(CoinDataset, Dataset):
     def __init__(self,
                  coin_type: CoinType,
                  exchange: Exchange,
-                 limit=None,
+                 limit: int = None,
+                 date_range_filter: Tuple[datetime, datetime] = None,
                  interpolate_missing_data: bool = True,
                  window_size: int = 60):
-        super().__init__(coin_type, exchange, limit, interpolate_missing_data, window_size)
+        super().__init__(coin_type, exchange, limit, date_range_filter, interpolate_missing_data, window_size)
 
     def __len__(self):
         return len(self.df) - self.window_size - 1
