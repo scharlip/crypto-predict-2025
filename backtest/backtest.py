@@ -8,6 +8,8 @@ from models.BaseModel import BaseModel, TransctionType
 
 
 def run_backtest(ds: CoinDataset, model: BaseModel, transaction_fee_pctg = 0.006, print_debug_statements = False) -> float:
+    total_transactions = 0
+    held_for = []
 
     current_usd_holdings = 100.0
     current_coin_holdings = 0.0
@@ -49,6 +51,7 @@ def run_backtest(ds: CoinDataset, model: BaseModel, transaction_fee_pctg = 0.006
 
             last_purchased_price = current_price
             last_purchased_time = current_time
+            total_transactions += 1
         elif transaction_type == TransctionType.Sell and timestamp_for_transaction <= current_time:
             prev_usd_holdings = current_usd_holdings
             prev_coin_holdings = current_coin_holdings
@@ -73,8 +76,29 @@ def run_backtest(ds: CoinDataset, model: BaseModel, transaction_fee_pctg = 0.006
                     gain_loss_msg
                 ))
 
+            held_for.append(current_time - last_purchased_time)
             last_purchased_price = None
             last_purchased_time = None
+            total_transactions += 1
         else:
             # either hold or not time to buy/sell yet
             pass
+
+    average_hold_time = sum(held_for, timedelta(0))/len(held_for)
+
+    if print_debug_statements:
+        print("Final results:")
+        print("  USD: {}".format(current_usd_holdings))
+        print("  Coin: {}".format(current_coin_holdings))
+        print("  Final coin price: {}".format(current_price))
+        print("  Total Transactions: {}".format(total_transactions))
+        print("  Average Hold Time: {}".format(str(average_hold_time)))
+        print("  Time elapsed: {}".format(str(timedelta(minutes = current_idx))))
+        print("  Steps: {}".format(current_idx))
+
+    if current_usd_holdings == 0.0:
+        current_usd_holdings = current_coin_holdings * current_price
+        current_usd_holdings *= (1.0 - transaction_fee_pctg)
+        current_coin_holdings = 0.0
+
+    return current_usd_holdings
