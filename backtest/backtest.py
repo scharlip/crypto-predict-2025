@@ -87,7 +87,10 @@ def run_backtest(ds: CoinDataset, model: BaseModel, transaction_fee_pctg = 0.006
             # either hold or not time to buy/sell yet
             pass
 
-    average_hold_time = sum(held_for, timedelta(0))/len(held_for)
+    if len(held_for) > 0:
+        average_hold_time = sum(held_for, timedelta(0))/len(held_for)
+    else:
+        average_hold_time = "N/A"
 
     if print_debug_statements:
         print("Backtest completed. Final results:")
