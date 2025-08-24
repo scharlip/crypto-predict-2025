@@ -9,6 +9,7 @@ from tqdm import tqdm
 import statistics
 import math
 
+from backtest import backtest
 from input.input import CoinDataset
 from models.BaseModel import BaseModel
 
@@ -51,7 +52,7 @@ def train_loop(
 
             y_pred = model(X_batch)
             y_pred = y_pred.squeeze()
-            loss = loss_fn(y_pred, y_batch)
+            loss = loss_fn()(y_pred, y_batch)
             train_errors.append(math.sqrt(loss))
             optimizer.zero_grad()
             loss.backward()
@@ -71,7 +72,7 @@ def train_loop(
 
                 y_pred = model(X_batch)
                 y_pred = y_pred.squeeze()
-                rmse = math.sqrt(loss_fn(y_pred, y_batch))
+                rmse = math.sqrt(loss_fn()(y_pred, y_batch))
                 validation_errors.append(rmse)
 
         avg_train_error = statistics.fmean(train_errors)
@@ -81,6 +82,9 @@ def train_loop(
             epoch, avg_train_error/batch_size, avg_train_error, avg_validation_error/batch_size, avg_validation_error))
 
         print("Done with epoch {}.".format(epoch))
+
+        if epoch > 0 and epoch % 20 == 0:
+            backtest.run_backtest(ds, model, print_debug_statements=True)
 
     test_errors = []
 
@@ -92,7 +96,7 @@ def train_loop(
 
             y_pred = model(X_batch)
             y_pred = y_pred.squeeze()
-            rmse = math.sqrt(loss_fn(y_pred, y_batch))
+            rmse = math.sqrt(loss_fn()(y_pred, y_batch))
             test_errors.append(rmse)
 
     avg_test_error = statistics.fmean(test_errors)

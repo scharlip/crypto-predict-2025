@@ -14,11 +14,11 @@ class PerfectMidpointPredictorModel(MidpointPredictorModel):
         super().__init__(threshold, lookahead)
         self.df = ds.df
 
-    def predict_future_window(self, past_window: DataFrame) -> DataFrame:
+    def predict_future_window(self, past_window: DataFrame) -> List[float]:
         end_timestamp = past_window.iloc[-1]["Open time"]
         end_index = self.df[self.df["Open time"] == end_timestamp].index.tolist()[0]
         window_df = self.df[end_index + 1 : end_index + self.lookahead + 1]
-        return window_df
+        return window_df["Midpoint"]
 
     def buy_sell_hold_decision(
             self,

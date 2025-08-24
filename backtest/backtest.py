@@ -8,6 +8,9 @@ from models.BaseModel import BaseModel, TransctionType
 
 
 def run_backtest(ds: CoinDataset, model: BaseModel, transaction_fee_pctg = 0.006, print_debug_statements = False) -> float:
+    if print_debug_statements:
+        print("Starting backtest ...")
+
     total_transactions = 0
     held_for = []
 
@@ -87,7 +90,7 @@ def run_backtest(ds: CoinDataset, model: BaseModel, transaction_fee_pctg = 0.006
     average_hold_time = sum(held_for, timedelta(0))/len(held_for)
 
     if print_debug_statements:
-        print("Final results:")
+        print("Backtest completed. Final results:")
         print("  USD: {}".format(current_usd_holdings))
         print("  Coin: {}".format(current_coin_holdings))
         print("  Final coin price: {}".format(current_price))
@@ -99,6 +102,5 @@ def run_backtest(ds: CoinDataset, model: BaseModel, transaction_fee_pctg = 0.006
     if current_usd_holdings == 0.0:
         current_usd_holdings = current_coin_holdings * current_price
         current_usd_holdings *= (1.0 - transaction_fee_pctg)
-        current_coin_holdings = 0.0
 
     return current_usd_holdings
