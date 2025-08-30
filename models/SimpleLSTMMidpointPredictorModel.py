@@ -5,7 +5,6 @@ import torch
 from pandas import DataFrame
 from torch import nn
 
-from input.input import MidpointCoinDataset
 from models.MidpointModelPredictor import MidpointPredictorModel
 from models.BaseModel import TransctionType
 

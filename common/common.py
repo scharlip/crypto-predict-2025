@@ -1,7 +1,5 @@
 from enum import StrEnum
 
-BASE_DIR = "/Users/scharlip/Desktop/crypto-predict/data/"
-
 class CoinType(StrEnum):
     BTC = "BTC"
     ETH = "ETH"
