@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from input.input import CoinDataset
 
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from models.BaseModel import BaseModel, TransctionType
 

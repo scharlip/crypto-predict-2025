@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch
 from torch.nn.modules.loss import _Loss
 from torch.optim import Optimizer
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import statistics
 import math
 
@@ -17,7 +17,6 @@ from models.BaseModel import BaseModel
 def train_loop(
         ds: CoinDataset,
         model: BaseModel,
-        device,
         optimizer: Optimizer,
         loss_fn: _Loss = nn.MSELoss,
         splits: List[float] = [0.8, 0.05, 0.15],
@@ -38,6 +37,13 @@ def train_loop(
     print("Batch size: {}".format(batch_size))
     print("Splits: {}".format(splits))
     print("Epochs: {}".format(epochs))
+
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    else:
+        device = torch.device("cpu")
+
+    print("Using device: {}".format(device))
 
     for epoch in range(epochs):
         print("Starting epoch {} ...".format(epoch))

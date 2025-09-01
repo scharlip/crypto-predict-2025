@@ -15,4 +15,4 @@ ds = MidpointCoinDataset(csv_dir = DATA_DIR, coin_type=CoinType.ETH, exchange=Ex
                          date_range_filter=[datetime(2024, 1, 1, 0, 0), datetime(2025, 1, 1, 0, 0)])
 model = SimpleLSTMMidpointPredictorModel(0.012, 60, hidden_size=300, num_layers=3, dropout=0.1)
 
-train_loop(ds=ds, model=model, device=torch.device("cpu"), optimizer=optim.Adam(model.parameters()))
+train_loop(ds=ds, model=model, optimizer=optim.Adam(model.parameters()))

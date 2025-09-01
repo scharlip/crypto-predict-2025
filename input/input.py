@@ -29,6 +29,11 @@ class CoinDataset:
         self.window_size = window_size
         self.df = self.__read_csv(interpolate_missing_data, limit, date_range_filter)
 
+        if torch.cuda.is_available():
+            self.device = torch.device("cuda")
+        else:
+            self.device = torch.device("cpu")
+
     def __read_csv(self,  interpolate_missing_data: bool = True, limit: int = None, date_range_filter: Tuple[datetime, datetime] = None) -> DataFrame:
         print("Reading csv for {}/{} (at {}) ...".format(self.coin_type, self.exchange, self.csv_dir))
 
@@ -103,4 +108,4 @@ class MidpointCoinDataset(CoinDataset, Dataset):
         X = self.df[item : item + self.window_size]["Midpoint"].tolist()
         y = self.df.iloc[item + self.window_size + 1]["Midpoint"].tolist()
 
-        return torch.tensor(X), torch.tensor(y)
+        return torch.tensor(X).to(self.device), torch.tensor(y).to(self.device)

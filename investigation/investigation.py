@@ -1,12 +1,13 @@
 from pandas import Timestamp
 
-from common.common import CoinType, Exchange, BASE_DIR
+from common.common import CoinType, Exchange
 from input.input import CoinDataset
-from tqdm import tqdm
+from tqdm.auto import tqdm
 from dataclasses import dataclass
 import pandas
 import os
 
+BASE_DIR = "/Users/scharlip/Desktop/crypto-predict/"
 coin_type = CoinType.ETH
 exchange = Exchange.Coinbase
 
