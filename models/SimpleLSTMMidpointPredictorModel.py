@@ -11,7 +11,7 @@ from models.BaseModel import TransctionType
 
 class SimpleLSTMMidpointPredictorModel(MidpointPredictorModel):
 
-    def __init__(self, threshold: float, lookahead: int, hidden_size = 50, num_layers = 1, dropout = 0.2):
+    def __init__(self, threshold: float, lookahead: int, hidden_size = 50, num_layers = 1, dropout = 0.2, is_data_normalized = False):
         super().__init__(threshold, lookahead)
 
         if torch.cuda.is_available():
@@ -22,6 +22,7 @@ class SimpleLSTMMidpointPredictorModel(MidpointPredictorModel):
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         self.dropout = dropout
+        self.is_data_normalized = is_data_normalized
         self.lstm = nn.LSTM(lookahead, hidden_size, num_layers, batch_first=True, dropout=dropout).to(self.device)
         self.linear = nn.Linear(hidden_size, 1).to(self.device)
 
@@ -32,7 +33,11 @@ class SimpleLSTMMidpointPredictorModel(MidpointPredictorModel):
         return linear_out
 
     def predict_future_window(self, past_window: DataFrame) -> List[float]:
-        current_window = past_window["Midpoint"].tolist()
+        if self.is_data_normalized:
+            current_window = past_window["NormalizedMidpoint"].tolist()
+        else:
+            current_window = past_window["Midpoint"].tolist()
+
         future_window = []
 
         while len(future_window) < self.lookahead:
@@ -43,6 +48,13 @@ class SimpleLSTMMidpointPredictorModel(MidpointPredictorModel):
             future_window.append(prediction)
             current_window.append(prediction)
             current_window.pop(0)
+
+        if self.is_data_normalized:
+            last_rolling_mean: float = past_window.iloc[-1]["RollingMean"].tolist()
+            last_rolling_stddev: float = past_window.iloc[-1]["RollingStdDev"].tolist()
+            return [(v * last_rolling_stddev) + last_rolling_mean for v in future_window]
+        else:
+            return future_window
 
         return future_window
 

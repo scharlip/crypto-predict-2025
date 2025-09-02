@@ -21,7 +21,8 @@ def train_loop(
         loss_fn: _Loss = nn.MSELoss,
         splits: List[float] = [0.8, 0.05, 0.15],
         batch_size = 32,
-        epochs = 200
+        epochs = 200,
+        epochs_per_backtest = 20
 ):
     train, validate, test = torch.utils.data.random_split(ds, splits)
 
@@ -89,7 +90,7 @@ def train_loop(
 
         print("Done with epoch {}.".format(epoch))
 
-        if epoch > 0 and epoch % 20 == 0:
+        if epoch > 0 and epoch % epochs_per_backtest == 0:
             backtest.run_backtest(ds, model, print_debug_statements=True)
 
     test_errors = []

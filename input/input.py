@@ -19,6 +19,8 @@ class CoinDataset:
                  date_range_filter: Tuple[datetime, datetime] = None,
                  interpolate_missing_data: bool = True,
                  window_size: int = 60,
+                 rolling_stats_len = 24*60,
+                 use_normalized_data = False
                  ):
         self.csv_dir = csv_dir
         self.coin_type = coin_type
@@ -27,14 +29,16 @@ class CoinDataset:
         self.date_range_filter = date_range_filter
         self.interpolate_missing_data = interpolate_missing_data
         self.window_size = window_size
-        self.df = self.__read_csv(interpolate_missing_data, limit, date_range_filter)
+        self.rolling_stats_len = rolling_stats_len
+        self.use_normalized_data = use_normalized_data
+        self.df = self.__read_csv()
 
         if torch.cuda.is_available():
             self.device = torch.device("cuda")
         else:
             self.device = torch.device("cpu")
 
-    def __read_csv(self,  interpolate_missing_data: bool = True, limit: int = None, date_range_filter: Tuple[datetime, datetime] = None) -> DataFrame:
+    def __read_csv(self) -> DataFrame:
         print("Reading csv for {}/{} (at {}) ...".format(self.coin_type, self.exchange, self.csv_dir))
 
         csv = "{}/{}/{}USD_1m_{}.csv".format(self.csv_dir, str(self.coin_type).lower(), str(self.coin_type), str(self.exchange))
@@ -68,21 +72,24 @@ class CoinDataset:
 
         ret = ret.sort_values("Open time").reset_index(drop=True)
 
-        if interpolate_missing_data:
+        if self.interpolate_missing_data:
             ret.interpolate(inplace=True, method='linear')
 
         ret["Midpoint"] = (ret["Low"] + ret["High"])/2
+        ret["RollingMean"] = ret["Midpoint"].rolling(self.rolling_stats_len).mean()
+        ret["RollingStdDev"] = ret["Midpoint"].rolling(self.rolling_stats_len).std()
+        ret["NormalizedMidpoint"] = (ret["Midpoint"] - ret["RollingMean"])/ret["RollingStdDev"]
 
         print("Read csv for {}/{}.".format(self.coin_type, self.exchange))
 
-        if date_range_filter is not None:
-            start = pd.Timestamp(date_range_filter[0])
-            end = pd.Timestamp(date_range_filter[1])
+        if self.date_range_filter is not None:
+            start = pd.Timestamp(self.date_range_filter[0])
+            end = pd.Timestamp(self.date_range_filter[1])
             ret = ret[(ret["Open time"] >= start) & (ret["Open time"] <= end)]
             ret = ret.reset_index()
 
-        if limit is not None:
-            return ret.head(limit)
+        if self.limit is not None:
+            return ret.head(self.limit)
         else:
             return ret
 
@@ -95,8 +102,11 @@ class MidpointCoinDataset(CoinDataset, Dataset):
                  limit: int = None,
                  date_range_filter: Tuple[datetime, datetime] = None,
                  interpolate_missing_data: bool = True,
-                 window_size: int = 60):
-        super().__init__(csv_dir, coin_type, exchange, limit, date_range_filter, interpolate_missing_data, window_size)
+                 window_size: int = 60,
+                 use_normalized_data = False):
+        super().__init__(csv_dir=csv_dir, coin_type=coin_type, exchange=exchange, limit=limit,
+                         date_range_filter=date_range_filter, interpolate_missing_data=interpolate_missing_data,
+                         window_size=window_size, use_normalized_data=use_normalized_data)
 
     def __len__(self):
         return len(self.df) - self.window_size - 1
@@ -105,7 +115,11 @@ class MidpointCoinDataset(CoinDataset, Dataset):
         if item > len(self.df):
             raise IndexError('index out of range')
 
-        X = self.df[item : item + self.window_size]["Midpoint"].tolist()
-        y = self.df.iloc[item + self.window_size + 1]["Midpoint"].tolist()
+        if self.use_normalized_data:
+            X = self.df[item : item + self.window_size]["NormalizedMidpoint"].tolist()
+            y = self.df.iloc[item + self.window_size + 1]["NormalizedMidpoint"].tolist()
+        else:
+            X = self.df[item : item + self.window_size]["Midpoint"].tolist()
+            y = self.df.iloc[item + self.window_size + 1]["Midpoint"].tolist()
 
         return torch.tensor(X).to(self.device), torch.tensor(y).to(self.device)
