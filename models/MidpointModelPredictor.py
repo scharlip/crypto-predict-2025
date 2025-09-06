@@ -46,7 +46,7 @@ class MidpointPredictorModel(BaseModel):
             else:
                 return (TransctionType.Hold, None)
         else:
-            # if we predict a value above the threshold, buy there
+            # if we predict a value above the threshold, sell there
             if max_value > last_purchased_price * (1 + self.threshold):
                 return (TransctionType.Sell, max_datetime)
 

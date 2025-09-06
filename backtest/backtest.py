@@ -64,7 +64,7 @@ def run_backtest(ds: CoinDataset, model: BaseModel, transaction_fee_pctg = 0.006
             current_coin_holdings = 0.0
 
             if print_debug_statements:
-                if last_purchased_price < current_price * (1 - transaction_fee_pctg):
+                if last_purchased_price < current_price * (1 - 2*transaction_fee_pctg):
                     gain_loss_msg = "NET GAIN"
                 else:
                     gain_loss_msg = "NET LOSS"
