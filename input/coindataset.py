@@ -3,7 +3,6 @@ from typing import Tuple
 
 import numpy as np
 import torch
-from torch.utils.data import Dataset
 import pandas as pd
 from pandas import DataFrame
 
@@ -92,34 +91,3 @@ class CoinDataset:
             return ret.head(self.limit)
         else:
             return ret
-
-class MidpointCoinDataset(CoinDataset, Dataset):
-
-    def __init__(self,
-                 csv_dir: str,
-                 coin_type: CoinType,
-                 exchange: Exchange,
-                 limit: int = None,
-                 date_range_filter: Tuple[datetime, datetime] = None,
-                 interpolate_missing_data: bool = True,
-                 window_size: int = 60,
-                 use_normalized_data = False):
-        super().__init__(csv_dir=csv_dir, coin_type=coin_type, exchange=exchange, limit=limit,
-                         date_range_filter=date_range_filter, interpolate_missing_data=interpolate_missing_data,
-                         window_size=window_size, use_normalized_data=use_normalized_data)
-
-    def __len__(self):
-        return len(self.df) - self.window_size - 1
-
-    def __getitem__(self, item):
-        if item > len(self.df):
-            raise IndexError('index out of range')
-
-        if self.use_normalized_data:
-            X = self.df[item : item + self.window_size]["NormalizedMidpoint"].tolist()
-            y = self.df.iloc[item + self.window_size + 1]["NormalizedMidpoint"].tolist()
-        else:
-            X = self.df[item : item + self.window_size]["Midpoint"].tolist()
-            y = self.df.iloc[item + self.window_size + 1]["Midpoint"].tolist()
-
-        return torch.tensor(X).to(self.device), torch.tensor(y).to(self.device)

@@ -10,7 +10,7 @@ import statistics
 import math
 
 from backtest import backtest
-from input.input import CoinDataset
+from input.coindataset import CoinDataset
 from models.BaseModel import BaseModel
 
 

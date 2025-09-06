@@ -9,7 +9,7 @@ from models.MidpointModelPredictor import MidpointPredictorModel
 from models.BaseModel import TransctionType
 
 
-class SimpleLSTMMidpointPredictorModel(MidpointPredictorModel):
+class SingleStepLSTMMidpointPredictorModel(MidpointPredictorModel):
 
     def __init__(self, threshold: float, lookahead: int, hidden_size = 50, num_layers = 1, dropout = 0.2, is_data_normalized = False):
         super().__init__(threshold, lookahead)

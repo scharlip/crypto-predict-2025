@@ -1,9 +1,8 @@
 from datetime import timedelta
 
-from input.input import CoinDataset
-
 from tqdm.auto import tqdm
 
+from input.coindataset import CoinDataset
 from models.BaseModel import BaseModel, TransctionType
 
 
