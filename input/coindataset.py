@@ -75,9 +75,7 @@ class CoinDataset:
             ret.interpolate(inplace=True, method='linear')
 
         ret["Midpoint"] = (ret["Low"] + ret["High"])/2
-        ret["RollingMean"] = ret["Midpoint"].rolling(self.rolling_stats_len).mean()
-        ret["RollingStdDev"] = ret["Midpoint"].rolling(self.rolling_stats_len).std()
-        ret["NormalizedMidpoint"] = (ret["Midpoint"] - ret["RollingMean"])/ret["RollingStdDev"]
+        ret["NormalizedMidpoint"] = np.log10(ret["Midpoint"])
 
         print("Read csv for {}/{}.".format(self.coin_type, self.exchange))
 

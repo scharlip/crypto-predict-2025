@@ -21,8 +21,8 @@ def train_loop(
         loss_fn: _Loss = nn.MSELoss,
         splits: List[float] = [0.8, 0.05, 0.15],
         batch_size = 32,
-        epochs = 200,
-        epochs_per_backtest = 20
+        epochs = 20,
+        epochs_per_backtest = 5
 ):
     train, validate, test = torch.utils.data.random_split(ds, splits)
 
@@ -87,6 +87,8 @@ def train_loop(
 
         print("Completed validation for epoch {}. Avg training RMSE: {} (per batch: {}), Avg validation RMSE: {} (per batch: {})".format(
             epoch, avg_train_error/batch_size, avg_train_error, avg_validation_error/batch_size, avg_validation_error))
+
+        backtest.spot_check(ds=ds, model=model)
 
         print("Done with epoch {}.".format(epoch))
 

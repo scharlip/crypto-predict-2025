@@ -58,9 +58,7 @@ class FullWindowLSTMEncoderDecoderMidpointPredictorModel(MidpointPredictorModel)
         future_window = prediction
 
         if self.is_data_normalized:
-            last_rolling_mean: float = past_window.iloc[-1]["RollingMean"].tolist()
-            last_rolling_stddev: float = past_window.iloc[-1]["RollingStdDev"].tolist()
-            return [(v * last_rolling_stddev) + last_rolling_mean for v in future_window]
+            return [(10.0**v) for v in future_window]
         else:
             return future_window
 

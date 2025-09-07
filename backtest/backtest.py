@@ -1,9 +1,12 @@
+import random
+import math
 from datetime import timedelta
 
 from tqdm.auto import tqdm
 
 from input.coindataset import CoinDataset
 from models.BaseModel import BaseModel, TransctionType
+from models.MidpointModelPredictor import MidpointPredictorModel
 
 
 def run_backtest(ds: CoinDataset, model: BaseModel, transaction_fee_pctg = 0.006, print_debug_statements = False) -> float:
@@ -106,3 +109,34 @@ def run_backtest(ds: CoinDataset, model: BaseModel, transaction_fee_pctg = 0.006
         current_usd_holdings *= (1.0 - transaction_fee_pctg)
 
     return current_usd_holdings
+
+def spot_check(ds: CoinDataset, model: MidpointPredictorModel, num_spot_checks = 20, seed: int = 42):
+    random.seed(seed)
+    all_absolute_diffs = []
+    all_pctg_diffs = []
+    for _ in range(num_spot_checks):
+        idx = random.randint(model.lookahead, len(ds.df))
+        past_window = ds.df[idx - model.lookahead : idx]
+        future_window = ds.df[idx : idx + model.lookahead]
+        future_vals = future_window["Midpoint"].tolist()
+        predicted_vals = model.predict_future_window(past_window)
+
+        absolute_diffs = [math.fabs(predicted_vals[i] - future_vals[i]) for i in range(len(predicted_vals))]
+        pctg_diffs = [absolute_diffs[i]/future_vals[i] for i in range(len(future_vals))]
+
+        all_absolute_diffs.extend(absolute_diffs)
+        all_pctg_diffs.extend(pctg_diffs)
+
+    avg_absolute_diff = sum(all_absolute_diffs)/len(all_absolute_diffs)
+    avg_pctg_diff = sum(all_pctg_diffs)/len(all_pctg_diffs)
+
+    max_absolute_diff = max(all_absolute_diffs)
+    max_pctg_diff = max(all_pctg_diffs)
+
+    min_absolute_diff = min(all_absolute_diffs)
+    min_pctg_diff = min(all_pctg_diffs)
+
+    print("Spot check results: {} spot checks (seed={})".format(num_spot_checks, seed))
+    print("  Averages: absolute={} percentage={}".format(avg_absolute_diff, avg_pctg_diff))
+    print("  Minimums: absolute={} percentage={}".format(min_absolute_diff, min_pctg_diff))
+    print("  Maximums: absolute={} percentage={}".format(max_absolute_diff, max_pctg_diff))
