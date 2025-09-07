@@ -3,14 +3,14 @@ from typing import List, Tuple
 
 from pandas import DataFrame
 
-from input.input import MidpointCoinDataset
+from input.SingleStepMidpointCoinDataset import SingleStepMidpointCoinDataset
 from models.MidpointModelPredictor import MidpointPredictorModel
 from models.BaseModel import TransctionType
 
 
 class PerfectMidpointPredictorModel(MidpointPredictorModel):
 
-    def __init__(self, ds: MidpointCoinDataset, threshold: float, lookahead: int):
+    def __init__(self, ds: SingleStepMidpointCoinDataset, threshold: float, lookahead: int):
         super().__init__(threshold, lookahead)
         self.df = ds.df
 

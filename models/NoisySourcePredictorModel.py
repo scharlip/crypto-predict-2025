@@ -3,14 +3,16 @@ from typing import List, Tuple
 
 from pandas import DataFrame
 
-from input.input import MidpointCoinDataset
-from models.MidpointModelPredictor import MidpointPredictorModel
+from input.SingleStepMidpointCoinDataset import SingleStepMidpointCoinDataset
 from models.BaseModel import TransctionType
 import random
 
+from models.MidpointModelPredictor import MidpointPredictorModel
+
+
 class NoisySourceMidpointPredictorModel(MidpointPredictorModel):
 
-    def __init__(self, ds: MidpointCoinDataset, threshold: float, lookahead: int, artificial_noise_pctg: float = 0.01) -> List[float]:
+    def __init__(self, ds: SingleStepMidpointCoinDataset, threshold: float, lookahead: int, artificial_noise_pctg: float = 0.01) -> List[float]:
         super().__init__(threshold, lookahead)
         self.df = ds.df
         self.add_noise_function = self.__add_noise_function(artificial_noise_pctg)
