@@ -56,13 +56,3 @@ class SingleStepLSTMMidpointPredictorModel(MidpointPredictorModel):
 
         return future_window
 
-    def buy_sell_hold_decision(
-            self,
-            current_time: datetime,
-            past_window: DataFrame,
-            last_purchased_price: float,
-            currently_have_usd: bool) -> Tuple[TransctionType, int]:
-
-        future_window = self.predict_future_window(past_window)
-        return super().decision(current_time, future_window, last_purchased_price, currently_have_usd)
-

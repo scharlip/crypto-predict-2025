@@ -41,7 +41,12 @@ class FullWindowLSTMEncoderDecoderMidpointPredictorModel(MidpointPredictorModel)
             (hidden, cell) = (prev_hidden, prev_cell)
             input = prediction
             predictions.append(prediction.squeeze())
-        outputs = torch.stack(predictions, 1)
+
+        if X.shape[0] == 1:
+            outputs = torch.stack(predictions).unsqueeze(0) # this is probably not right
+        else:
+            outputs = torch.stack(predictions, 1)
+
         return outputs
 
     def predict_future_window(self, past_window: DataFrame) -> List[float]:
@@ -61,14 +66,4 @@ class FullWindowLSTMEncoderDecoderMidpointPredictorModel(MidpointPredictorModel)
             return [(10.0**v) for v in future_window]
         else:
             return future_window
-
-    def buy_sell_hold_decision(
-            self,
-            current_time: datetime,
-            past_window: DataFrame,
-            last_purchased_price: float,
-            currently_have_usd: bool) -> Tuple[TransctionType, int]:
-
-        future_window = self.predict_future_window(past_window)
-        return super().decision(current_time, future_window, last_purchased_price, currently_have_usd)
 

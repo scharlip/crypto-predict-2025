@@ -18,14 +18,4 @@ class PerfectMidpointPredictorModel(MidpointPredictorModel):
         end_timestamp = past_window.iloc[-1]["Open time"]
         end_index = self.df[self.df["Open time"] == end_timestamp].index.tolist()[0]
         window_df = self.df[end_index + 1 : end_index + self.lookahead + 1]
-        return window_df["Midpoint"]
-
-    def buy_sell_hold_decision(
-            self,
-            current_time: datetime,
-            past_window: DataFrame,
-            last_purchased_price: float,
-            currently_have_usd: bool) -> Tuple[TransctionType, int]:
-
-        future_window = self.predict_future_window(past_window)
-        return super().decision(current_time, future_window, last_purchased_price, currently_have_usd)
+        return window_df["Midpoint"].tolist()

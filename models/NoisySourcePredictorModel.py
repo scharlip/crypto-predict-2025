@@ -28,14 +28,4 @@ class NoisySourceMidpointPredictorModel(MidpointPredictorModel):
         end_index = self.df[self.df["Open time"] == end_timestamp].index.tolist()[0]
         perfect_prediction_window = self.df[end_index + 1: end_index + self.lookahead + 1].copy()
         perfect_prediction_window["Midpoint"] = perfect_prediction_window["Midpoint"].apply(self.add_noise_function)
-        return perfect_prediction_window["Midpoint"]
-
-    def buy_sell_hold_decision(
-            self,
-            current_time: datetime,
-            past_window: DataFrame,
-            last_purchased_price: float,
-            currently_have_usd: bool) -> Tuple[TransctionType, int]:
-
-        future_window = self.predict_future_window(past_window)
-        return super().decision(current_time, future_window, last_purchased_price, currently_have_usd)
+        return perfect_prediction_window["Midpoint"].tolist()
