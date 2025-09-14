@@ -11,8 +11,8 @@ from models.BaseModel import TransctionType
 
 class FullWindowLSTMEncoderDecoderMidpointPredictorModel(MidpointPredictorModel):
 
-    def __init__(self, threshold: float, lookahead: int, hidden_size = 50, num_layers = 1, dropout = 0.2, is_data_normalized = False):
-        super().__init__(threshold, lookahead)
+    def __init__(self, threshold: float, lookback: int, lookahead: int, hidden_size = 50, num_layers = 1, dropout = 0.2, is_data_normalized = False):
+        super().__init__(threshold=threshold, lookback=lookback, lookahead=lookahead)
 
         if torch.cuda.is_available():
             self.device = torch.device("cuda")
@@ -49,11 +49,11 @@ class FullWindowLSTMEncoderDecoderMidpointPredictorModel(MidpointPredictorModel)
 
         return outputs
 
-    def predict_future_window(self, past_window: DataFrame) -> List[float]:
+    def predict_lookahead_window(self, lookback_window: DataFrame) -> List[float]:
         if self.is_data_normalized:
-            current_window = past_window["NormalizedMidpoint"].tolist()
+            current_window = lookback_window["NormalizedMidpoint"].tolist()
         else:
-            current_window = past_window["Midpoint"].tolist()
+            current_window = lookback_window["Midpoint"].tolist()
 
         x_tensor = torch.tensor(current_window).to(self.device)
         x_batch = torch.unsqueeze(x_tensor, 0).to(self.device)

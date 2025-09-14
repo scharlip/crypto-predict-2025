@@ -12,8 +12,8 @@ from models.MidpointModelPredictor import MidpointPredictorModel
 
 class NoisySourceMidpointPredictorModel(MidpointPredictorModel):
 
-    def __init__(self, ds: SingleStepMidpointCoinDataset, threshold: float, lookahead: int, artificial_noise_pctg: float = 0.01) -> List[float]:
-        super().__init__(threshold, lookahead)
+    def __init__(self, ds: SingleStepMidpointCoinDataset, threshold: float, lookback: int, lookahead: int, artificial_noise_pctg: float = 0.01) -> List[float]:
+        super().__init__(threshold, lookback=lookback, lookahead=lookahead)
         self.df = ds.df
         self.add_noise_function = self.__add_noise_function(artificial_noise_pctg)
 
@@ -23,8 +23,8 @@ class NoisySourceMidpointPredictorModel(MidpointPredictorModel):
             return val * random.uniform(1.0 - artificial_noise_pctg, 1.0 + artificial_noise_pctg)
         return __noisify
 
-    def predict_future_window(self, past_window: DataFrame) -> List[float]:
-        end_timestamp = past_window.iloc[-1]["Open time"]
+    def predict_lookahead_window(self, lookback_window: DataFrame) -> List[float]:
+        end_timestamp = lookback_window.iloc[-1]["Open time"]
         end_index = self.df[self.df["Open time"] == end_timestamp].index.tolist()[0]
         perfect_prediction_window = self.df[end_index + 1: end_index + self.lookahead + 1].copy()
         perfect_prediction_window["Midpoint"] = perfect_prediction_window["Midpoint"].apply(self.add_noise_function)

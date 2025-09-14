@@ -22,8 +22,8 @@ def run_backtest(ds: CoinDataset, model: BaseModel, transaction_fee_pctg = 0.006
     last_purchased_price = None
     last_purchased_time = None
 
-    for current_idx in tqdm(range(ds.window_size, len(ds))):
-        past_window = ds.df[current_idx - ds.window_size : current_idx]
+    for current_idx in tqdm(range(ds.lookback, len(ds))):
+        past_window = ds.df[current_idx - ds.lookback: current_idx]
         current_price = ds.df.iloc[current_idx]["Midpoint"].tolist()
         current_time = ds.df.iloc[current_idx]["Open time"].to_pydatetime()
 
@@ -116,10 +116,10 @@ def spot_check(ds: CoinDataset, model: MidpointPredictorModel, num_spot_checks =
     all_pctg_diffs = []
     for _ in range(num_spot_checks):
         idx = random.randint(model.lookahead, len(ds.df))
-        past_window = ds.df[idx - model.lookahead : idx]
+        past_window = ds.df[idx - model.lookback : idx]
         future_window = ds.df[idx : idx + model.lookahead]
         future_vals = future_window["Midpoint"].tolist()
-        predicted_vals = model.predict_future_window(past_window)
+        predicted_vals = model.predict_lookahead_window(past_window)
 
         absolute_diffs = [math.fabs(predicted_vals[i] - future_vals[i]) for i in range(len(predicted_vals))]
         pctg_diffs = [absolute_diffs[i]/future_vals[i] for i in range(len(future_vals))]

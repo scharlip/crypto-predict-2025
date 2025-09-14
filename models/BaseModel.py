@@ -16,11 +16,11 @@ class BaseModel(nn.Module):
     def buy_sell_hold_decision(
             self,
             current_time: datetime,
-            past_window: DataFrame,
+            lookback_window: DataFrame,
             last_purchased_price: float,
             currently_have_usd: bool) -> Tuple[TransctionType, int]:
 
-        future_window = self.predict_future_window(past_window)
+        future_window = self.predict_lookahead_window(lookback_window)
 
         min_idx = None
         max_idx = None
@@ -56,3 +56,6 @@ class BaseModel(nn.Module):
             # otherwise do nothing
             else:
                 return (TransctionType.Hold, None)
+
+    def predict_lookahead_window(self, lookback_window: DataFrame) -> DataFrame:
+        raise NotImplementedError("Implemented in subclasses")

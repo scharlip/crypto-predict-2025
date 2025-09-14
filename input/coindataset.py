@@ -14,20 +14,22 @@ class CoinDataset:
                  csv_dir: str,
                  coin_type: CoinType,
                  exchange: Exchange,
+                 lookback: int,
+                 lookahead: int,
                  limit: int = None,
                  date_range_filter: Tuple[datetime, datetime] = None,
                  interpolate_missing_data: bool = True,
-                 window_size: int = 60,
                  rolling_stats_len = 24*60,
                  use_normalized_data = False
                  ):
         self.csv_dir = csv_dir
         self.coin_type = coin_type
         self.exchange = exchange
+        self.lookback = lookback
+        self.lookahead = lookahead
         self.limit = limit
         self.date_range_filter = date_range_filter
         self.interpolate_missing_data = interpolate_missing_data
-        self.window_size = window_size
         self.rolling_stats_len = rolling_stats_len
         self.use_normalized_data = use_normalized_data
         self.df = self.__read_csv()

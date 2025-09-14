@@ -10,12 +10,12 @@ from models.BaseModel import TransctionType
 
 class PerfectMidpointPredictorModel(MidpointPredictorModel):
 
-    def __init__(self, ds: SingleStepMidpointCoinDataset, threshold: float, lookahead: int):
-        super().__init__(threshold, lookahead)
+    def __init__(self, ds: SingleStepMidpointCoinDataset, threshold: float, lookback: int, lookahead: int):
+        super().__init__(threshold=threshold, lookback=lookback, lookahead=lookahead)
         self.df = ds.df
 
-    def predict_future_window(self, past_window: DataFrame) -> List[float]:
-        end_timestamp = past_window.iloc[-1]["Open time"]
+    def predict_lookahead_window(self, lookback_window: DataFrame) -> List[float]:
+        end_timestamp = lookback_window.iloc[-1]["Open time"]
         end_index = self.df[self.df["Open time"] == end_timestamp].index.tolist()[0]
         window_df = self.df[end_index + 1 : end_index + self.lookahead + 1]
         return window_df["Midpoint"].tolist()
