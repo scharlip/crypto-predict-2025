@@ -22,7 +22,7 @@ class MidpointPredictorModel(BaseModel):
         descriptor = self.descriptor_string()
         filename = "model"
         for (k, v) in extra_kwargs.items():
-            filename = filename + "_{}.{}".format(str(k), str(v))
+            filename = filename + "|{}_{}".format(str(k), str(v))
 
         subdir = model_save_dir + "/" + descriptor
         os.makedirs(subdir, exist_ok=True)
