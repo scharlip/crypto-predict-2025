@@ -28,7 +28,7 @@ def train_loop(
 
     train_loader = data.DataLoader(train, shuffle=False, batch_size=batch_size)
     validation_loader = data.DataLoader(validate, shuffle=False, batch_size=batch_size)
-    test_loader = data.DataLoader(test, shuffle=False, batch_size=32)
+    test_loader = data.DataLoader(test, shuffle=False, batch_size=batch_size)
 
     print("Beginning training loop.")
     print("Model:")
