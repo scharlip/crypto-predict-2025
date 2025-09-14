@@ -1,5 +1,7 @@
 from enum import StrEnum
 
+import os
+import torch
 import torch.nn as nn
 from pandas import DataFrame
 from datetime import datetime, timedelta
@@ -58,4 +60,7 @@ class BaseModel(nn.Module):
                 return (TransctionType.Hold, None)
 
     def predict_lookahead_window(self, lookback_window: DataFrame) -> DataFrame:
+        raise NotImplementedError("Implemented in subclasses")
+
+    def descriptor_string(self):
         raise NotImplementedError("Implemented in subclasses")

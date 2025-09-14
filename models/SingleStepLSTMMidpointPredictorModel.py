@@ -56,3 +56,20 @@ class SingleStepLSTMMidpointPredictorModel(MidpointPredictorModel):
 
         return future_window
 
+    def descriptor_string(self):
+        format_string = "SingleStepLSTMMidpointPredictorModel_" + \
+                "lookback_{}_" + \
+                "lookahead_{}_" + \
+                "hidden_{}_" + \
+                "layers_{}_" + \
+                "dropout_{}_" + \
+                "normalized_{}"
+        descriptor = format_string.format(
+                    self.lookback,
+                    self.lookahead,
+                    self.hidden_size,
+                    self.num_layers,
+                    self.dropout,
+                    self.is_data_normalized
+                )
+        return descriptor

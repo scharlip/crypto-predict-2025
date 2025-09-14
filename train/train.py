@@ -18,6 +18,7 @@ def train_loop(
         ds: CoinDataset,
         model: BaseModel,
         optimizer: Optimizer,
+        model_save_dir: str,
         loss_fn: _Loss = nn.MSELoss,
         splits: List[float] = [0.8, 0.05, 0.15],
         batch_size = 32,
@@ -51,7 +52,7 @@ def train_loop(
 
         print("Starting training for epoch {} ...".format(epoch))
 
-        train_errors = []
+        train_losses = []
         model.train()
         for X_batch, y_batch in tqdm(train_loader):
             X_batch = X_batch.to(device)
@@ -60,14 +61,14 @@ def train_loop(
             y_pred = model(X_batch)
             y_pred = y_pred.squeeze()
             loss = loss_fn()(y_pred, y_batch)
-            train_errors.append(math.sqrt(loss))
+            train_losses.append(math.sqrt(loss))
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
         print("Completed training for epoch {}.".format(epoch))
 
-        validation_errors = []
+        validation_losses = []
 
         print("Starting validation for epoch {} ...".format(epoch))
 
@@ -80,15 +81,18 @@ def train_loop(
                 y_pred = model(X_batch)
                 y_pred = y_pred.squeeze()
                 rmse = math.sqrt(loss_fn()(y_pred, y_batch))
-                validation_errors.append(rmse)
+                validation_losses.append(rmse)
 
-        avg_train_error = statistics.fmean(train_errors)
-        avg_validation_error = statistics.fmean(validation_errors)
+        avg_train_loss = statistics.fmean(train_losses)
+        avg_validation_loss = statistics.fmean(validation_losses)
 
         print("Completed validation for epoch {}. Avg training RMSE: {} (per batch: {}), Avg validation RMSE: {} (per batch: {})".format(
-            epoch, avg_train_error/batch_size, avg_train_error, avg_validation_error/batch_size, avg_validation_error))
+            epoch, avg_train_loss/batch_size, avg_train_loss, avg_validation_loss/batch_size, avg_validation_loss))
 
         backtest.spot_check(ds=ds, model=model)
+
+        print("Saving model ... (dir: {})".format(model_save_dir))
+        model.save_model(model_save_dir, epoch=epoch, batch_size=batch_size, avg_train_loss=avg_train_loss, avg_validation_loss=avg_validation_loss)
 
         print("Done with epoch {}.".format(epoch))
 

@@ -19,3 +19,15 @@ class PerfectMidpointPredictorModel(MidpointPredictorModel):
         end_index = self.df[self.df["Open time"] == end_timestamp].index.tolist()[0]
         window_df = self.df[end_index + 1 : end_index + self.lookahead + 1]
         return window_df["Midpoint"].tolist()
+
+    def descriptor_string(self):
+        format_string = "PerfectMidpointPredictorModel_" + \
+                "threshold_{}_" + \
+                "lookback_{}_" + \
+                "lookahead_{}"
+        descriptor = format_string.format(
+                    self.threshold,
+                    self.lookback,
+                    self.lookahead
+                )
+        return descriptor
