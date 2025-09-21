@@ -1,3 +1,4 @@
+import os
 from typing import List
 
 import torch.utils.data as data
@@ -19,6 +20,7 @@ def train_loop(
         model: BaseModel,
         optimizer: Optimizer,
         model_save_dir: str,
+        base_log_dir: str,
         loss_fn: _Loss = nn.MSELoss,
         splits: List[float] = [0.8, 0.05, 0.15],
         batch_size = 32,
@@ -46,6 +48,11 @@ def train_loop(
         device = torch.device("cpu")
 
     print("Using device: {}".format(device))
+
+    backtests_run = 0
+
+    log_dir = "{}/{}".format(base_log_dir, model.descriptor_string())
+    os.makedirs(log_dir, exist_ok=True)
 
     for epoch in range(epochs):
         print("Starting epoch {} ...".format(epoch))
@@ -89,15 +96,16 @@ def train_loop(
         print("Completed validation for epoch {}. Avg training RMSE: {} (per batch: {}), Avg validation RMSE: {} (per batch: {})".format(
             epoch, avg_train_loss/batch_size, avg_train_loss, avg_validation_loss/batch_size, avg_validation_loss))
 
-        backtest.spot_check(ds=ds, model=model)
+        backtest.spot_check(ds=ds, model=model, log_file_name="{}/spot_check_epoch_{}.txt".format(log_dir, epoch))
 
         print("Saving model ... (dir: {})".format(model_save_dir))
         model.save_model(model_save_dir, epoch=epoch, batch_size=batch_size, avg_train_loss=avg_train_loss, avg_validation_loss=avg_validation_loss)
 
         print("Done with epoch {}.".format(epoch))
 
-        if epoch > 0 and epoch % epochs_per_backtest == 0:
-            backtest.run_backtest(ds, model, print_debug_statements=True)
+        if epoch > 0 and epochs_per_backtest is not None and epoch % epochs_per_backtest == 0:
+            backtest.run_backtest(ds, model, log_file_name="{}/backtest_epoch_{}.txt".format(log_dir, epoch))
+            backtests_run += 1
 
     test_errors = []
 
@@ -118,6 +126,11 @@ def train_loop(
             avg_test_error / batch_size, avg_test_error
         )
     )
+
+    if epochs_per_backtest is not None and backtests_run == 0:
+        print("Haven't run a backtest yet. Running final backtest ...")
+        backtest.run_backtest(ds, model, log_file_name="{}/backtest_final.txt".format(log_dir))
+        backtests_run += 1
 
     print("Completed training loop.")
 

@@ -1,6 +1,7 @@
 import random
 import math
 from datetime import timedelta
+from os import close
 
 from tqdm.auto import tqdm
 
@@ -8,10 +9,21 @@ from input.coindataset import CoinDataset
 from models.BaseModel import BaseModel, TransctionType
 from models.MidpointModelPredictor import MidpointPredictorModel
 
+def log(msg: str, log_file):
+    if log_file:
+        log_file.write(msg + "\n")
+        log_file.flush()
+    else:
+        print(msg + "\n")
 
-def run_backtest(ds: CoinDataset, model: BaseModel, transaction_fee_pctg = 0.006, print_debug_statements = False) -> float:
-    if print_debug_statements:
-        print("Starting backtest ...")
+def run_backtest(ds: CoinDataset, model: BaseModel, transaction_fee_pctg = 0.006, log_file_name = None, should_log = True) -> float:
+
+    log_file = None
+    if log_file_name:
+        log_file = open(log_file_name, 'w')
+
+    if should_log:
+        log("Starting backtest ...", log_file)
 
     total_transactions = 0
     held_for = []
@@ -45,14 +57,14 @@ def run_backtest(ds: CoinDataset, model: BaseModel, transaction_fee_pctg = 0.006
             current_coin_holdings *= (1.0 - transaction_fee_pctg)
             current_usd_holdings = 0.0
 
-            if print_debug_statements:
-                print("\nBought coins at a price of {}. USD: {} -> {}, Coin: {} -> {} (Step: {}, Total time elapsed: {})".format(
+            if should_log:
+                log("\nBought coins at a price of {}. USD: {} -> {}, Coin: {} -> {} (Step: {}, Total time elapsed: {})".format(
                     current_price,
                     prev_usd_holdings, current_usd_holdings,
                     prev_coin_holdings, current_coin_holdings,
                     current_idx,
                     str(timedelta(minutes=current_idx)),
-                ))
+                ), log_file)
 
             last_purchased_price = current_price
             last_purchased_time = current_time
@@ -65,13 +77,13 @@ def run_backtest(ds: CoinDataset, model: BaseModel, transaction_fee_pctg = 0.006
             current_usd_holdings *= (1.0 - transaction_fee_pctg)
             current_coin_holdings = 0.0
 
-            if print_debug_statements:
+            if should_log:
                 if last_purchased_price < current_price * (1 - 2*transaction_fee_pctg):
                     gain_loss_msg = "NET GAIN"
                 else:
                     gain_loss_msg = "NET LOSS"
 
-                print("\nSold coins at a price of {}. USD: {} -> {}, Coin: {} -> {} (Held for: {}, Total time elapsed: {}, Step: {}) {}".format(
+                log("\nSold coins at a price of {}. USD: {} -> {}, Coin: {} -> {} (Held for: {}, Total time elapsed: {}, Step: {}) {}".format(
                     current_price,
                     prev_usd_holdings, current_usd_holdings,
                     prev_coin_holdings, current_coin_holdings,
@@ -79,7 +91,7 @@ def run_backtest(ds: CoinDataset, model: BaseModel, transaction_fee_pctg = 0.006
                     str(timedelta(minutes = current_idx)),
                     current_idx,
                     gain_loss_msg
-                ))
+                ), log_file)
 
             held_for.append(current_time - last_purchased_time)
             last_purchased_price = None
@@ -94,23 +106,31 @@ def run_backtest(ds: CoinDataset, model: BaseModel, transaction_fee_pctg = 0.006
     else:
         average_hold_time = "N/A"
 
-    if print_debug_statements:
-        print("Backtest completed. Final results:")
-        print("  USD: {}".format(current_usd_holdings))
-        print("  Coin: {}".format(current_coin_holdings))
-        print("  Final coin price: {}".format(current_price))
-        print("  Total Transactions: {}".format(total_transactions))
-        print("  Average Hold Time: {}".format(str(average_hold_time)))
-        print("  Time elapsed: {}".format(str(timedelta(minutes = current_idx))))
-        print("  Steps: {}".format(current_idx))
+    if should_log:
+        log("Backtest completed. Final results:", log_file)
+        log("  USD: {}".format(current_usd_holdings), log_file)
+        log("  Coin: {}".format(current_coin_holdings), log_file)
+        log("  Final coin price: {}".format(current_price), log_file)
+        log("  Total Transactions: {}".format(total_transactions), log_file)
+        log("  Average Hold Time: {}".format(str(average_hold_time)), log_file)
+        log("  Time elapsed: {}".format(str(timedelta(minutes = current_idx))), log_file)
+        log("  Steps: {}".format(current_idx), log_file)
 
     if current_usd_holdings == 0.0:
         current_usd_holdings = current_coin_holdings * current_price
         current_usd_holdings *= (1.0 - transaction_fee_pctg)
 
+    if log_file:
+        log_file.flush()
+        log_file.close()
+
     return current_usd_holdings
 
-def spot_check(ds: CoinDataset, model: MidpointPredictorModel, num_spot_checks = 20, seed: int = 42):
+def spot_check(ds: CoinDataset, model: MidpointPredictorModel, num_spot_checks = 20, seed: int = 42, log_file_name = None, should_log = True):
+    log_file = None
+    if log_file_name:
+        log_file = open(log_file_name, 'w')
+
     random.seed(seed)
     all_absolute_diffs = []
     all_pctg_diffs = []
@@ -136,7 +156,12 @@ def spot_check(ds: CoinDataset, model: MidpointPredictorModel, num_spot_checks =
     min_absolute_diff = min(all_absolute_diffs)
     min_pctg_diff = min(all_pctg_diffs)
 
-    print("Spot check results: {} spot checks (seed={})".format(num_spot_checks, seed))
-    print("  Averages: absolute={} percentage={}".format(avg_absolute_diff, avg_pctg_diff))
-    print("  Minimums: absolute={} percentage={}".format(min_absolute_diff, min_pctg_diff))
-    print("  Maximums: absolute={} percentage={}".format(max_absolute_diff, max_pctg_diff))
+    if should_log:
+        log("Spot check results: {} spot checks (seed={})".format(num_spot_checks, seed), log_file)
+        log("  Averages: absolute={} percentage={}".format(avg_absolute_diff, avg_pctg_diff), log_file)
+        log("  Minimums: absolute={} percentage={}".format(min_absolute_diff, min_pctg_diff), log_file)
+        log("  Maximums: absolute={} percentage={}".format(max_absolute_diff, max_pctg_diff), log_file)
+
+    if log_file:
+        log_file.flush()
+        log_file.close()
