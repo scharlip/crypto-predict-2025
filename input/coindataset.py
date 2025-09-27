@@ -5,8 +5,11 @@ import numpy as np
 import torch
 import pandas as pd
 from pandas import DataFrame
+from sklearn.preprocessing import MinMaxScaler
 
 from common.common import CoinType, Exchange
+from input.MidpointNormalizer import MidpointNormalizer
+
 
 class CoinDataset:
 
@@ -77,7 +80,12 @@ class CoinDataset:
             ret.interpolate(inplace=True, method='linear')
 
         ret["Midpoint"] = (ret["Low"] + ret["High"])/2
-        ret["NormalizedMidpoint"] = np.log10(ret["Midpoint"])
+        ret["Log10Midpoint"] = np.log10(ret["Midpoint"])
+
+        scaler = MinMaxScaler()
+        ret["NormalizedMidpoint"] = scaler.fit_transform(ret[["Log10Midpoint"]])
+
+        self.normalizer = MidpointNormalizer(scaler)
 
         print("Read csv for {}/{}.".format(self.coin_type, self.exchange))
 

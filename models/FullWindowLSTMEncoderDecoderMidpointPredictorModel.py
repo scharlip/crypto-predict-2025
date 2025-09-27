@@ -5,13 +5,14 @@ import torch
 from pandas import DataFrame
 from torch import nn
 
+from input.MidpointNormalizer import MidpointNormalizer
 from models.MidpointModelPredictor import MidpointPredictorModel
 from models.BaseModel import TransctionType
 
 
 class FullWindowLSTMEncoderDecoderMidpointPredictorModel(MidpointPredictorModel):
 
-    def __init__(self, threshold: float, lookback: int, lookahead: int, hidden_size = 50, num_layers = 1, dropout = 0.2, is_data_normalized = False):
+    def __init__(self, threshold: float, lookback: int, lookahead: int, hidden_size = 50, num_layers = 1, dropout = 0.2, normalizer: MidpointNormalizer = None):
         super().__init__(threshold=threshold, lookback=lookback, lookahead=lookahead)
 
         if torch.cuda.is_available():
@@ -22,7 +23,7 @@ class FullWindowLSTMEncoderDecoderMidpointPredictorModel(MidpointPredictorModel)
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         self.dropout = dropout
-        self.is_data_normalized = is_data_normalized
+        self.normalizer = normalizer
         self.encoder_lstm = nn.LSTM(input_size=1, hidden_size=hidden_size, num_layers=num_layers, batch_first=True, dropout=dropout).to(self.device)
         self.decoder_lstm = nn.LSTM(input_size=1, hidden_size=hidden_size, num_layers=num_layers, batch_first=True, dropout=dropout).to(self.device)
         self.linear = nn.Linear(hidden_size, 1).to(self.device)
@@ -50,7 +51,7 @@ class FullWindowLSTMEncoderDecoderMidpointPredictorModel(MidpointPredictorModel)
         return outputs
 
     def predict_lookahead_window(self, lookback_window: DataFrame) -> List[float]:
-        if self.is_data_normalized:
+        if self.normalizer:
             current_window = lookback_window["NormalizedMidpoint"].tolist()
         else:
             current_window = lookback_window["Midpoint"].tolist()
@@ -62,8 +63,8 @@ class FullWindowLSTMEncoderDecoderMidpointPredictorModel(MidpointPredictorModel)
 
         future_window = prediction
 
-        if self.is_data_normalized:
-            return [(10.0**v) for v in future_window]
+        if self.normalizer:
+            return self.normalizer.denormalize(future_window)
         else:
             return future_window
 
@@ -81,6 +82,6 @@ class FullWindowLSTMEncoderDecoderMidpointPredictorModel(MidpointPredictorModel)
                     self.hidden_size,
                     self.num_layers,
                     self.dropout,
-                    self.is_data_normalized
-                )
+                    self.normalizer is not None
+        )
         return descriptor

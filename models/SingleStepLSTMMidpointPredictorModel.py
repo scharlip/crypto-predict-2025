@@ -11,7 +11,7 @@ from models.BaseModel import TransctionType
 
 class SingleStepLSTMMidpointPredictorModel(MidpointPredictorModel):
 
-    def __init__(self, threshold: float, lookback: int, lookahead: int, hidden_size = 50, num_layers = 1, dropout = 0.2, is_data_normalized = False):
+    def __init__(self, threshold: float, lookback: int, lookahead: int, hidden_size = 50, num_layers = 1, dropout = 0.2, normalizer = None):
         super().__init__(threshold=threshold, lookback=lookback, lookahead=lookahead)
 
         if torch.cuda.is_available():
@@ -22,7 +22,7 @@ class SingleStepLSTMMidpointPredictorModel(MidpointPredictorModel):
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         self.dropout = dropout
-        self.is_data_normalized = is_data_normalized
+        self.normalizer = normalizer
         self.lstm = nn.LSTM(lookback, hidden_size, num_layers, batch_first=True, dropout=dropout).to(self.device)
         self.linear = nn.Linear(hidden_size, 1).to(self.device)
 
@@ -33,7 +33,7 @@ class SingleStepLSTMMidpointPredictorModel(MidpointPredictorModel):
         return linear_out
 
     def predict_lookahead_window(self, lookback_window: DataFrame) -> List[float]:
-        if self.is_data_normalized:
+        if self.normalizer:
             current_window = lookback_window["NormalizedMidpoint"].tolist()
         else:
             current_window = lookback_window["Midpoint"].tolist()
@@ -49,8 +49,8 @@ class SingleStepLSTMMidpointPredictorModel(MidpointPredictorModel):
             current_window.append(prediction)
             current_window.pop(0)
 
-        if self.is_data_normalized:
-            return [(10.0**v) for v in future_window]
+        if self.normalizer:
+            return self.normalizer.denormalize(future_window)
         else:
             return future_window
 
@@ -70,6 +70,6 @@ class SingleStepLSTMMidpointPredictorModel(MidpointPredictorModel):
                     self.hidden_size,
                     self.num_layers,
                     self.dropout,
-                    self.is_data_normalized
+                    self.normalizer is not None
                 )
         return descriptor

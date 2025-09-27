@@ -104,7 +104,9 @@ def train_loop(
         print("Done with epoch {}.".format(epoch))
 
         if epoch > 0 and epochs_per_backtest is not None and epoch % epochs_per_backtest == 0:
+            print("Running backtest #{} ...".format(backtests_run + 1))
             backtest.run_backtest(ds, model, log_file_name="{}/backtest_epoch_{}.txt".format(log_dir, epoch))
+            print("Backtest #{} completed.".format(backtests_run + 1))
             backtests_run += 1
 
     test_errors = []
@@ -131,6 +133,7 @@ def train_loop(
         print("Haven't run a backtest yet. Running final backtest ...")
         backtest.run_backtest(ds, model, log_file_name="{}/backtest_final.txt".format(log_dir))
         backtests_run += 1
+        print("Final backtest completed.")
 
     print("Completed training loop.")
 
