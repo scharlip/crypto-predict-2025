@@ -1,13 +1,12 @@
 import random
 import math
 from datetime import timedelta
-from os import close
 
 from tqdm.auto import tqdm
 
 from input.coindataset import CoinDataset
 from models.BaseModel import BaseModel, TransctionType
-from models.MidpointModelPredictor import MidpointPredictorModel
+from models.midpoint.MidpointModelPredictor import MidpointPredictorModel
 
 def log(msg: str, log_file):
     if log_file:

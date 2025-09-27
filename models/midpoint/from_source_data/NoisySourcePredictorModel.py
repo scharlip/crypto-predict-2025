@@ -1,13 +1,11 @@
-from datetime import datetime, timedelta
-from typing import List, Tuple
+from typing import List
 
 from pandas import DataFrame
 
 from input.SingleStepMidpointCoinDataset import SingleStepMidpointCoinDataset
-from models.BaseModel import TransctionType
 import random
 
-from models.MidpointModelPredictor import MidpointPredictorModel
+from models.midpoint.MidpointModelPredictor import MidpointPredictorModel
 
 
 class NoisySourceMidpointPredictorModel(MidpointPredictorModel):

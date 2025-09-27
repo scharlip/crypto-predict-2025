@@ -1,13 +1,11 @@
-from datetime import datetime
-from typing import Tuple, List
+from typing import List
 
 import torch
 from pandas import DataFrame
 from torch import nn
 
 from input.MidpointNormalizer import MidpointNormalizer
-from models.MidpointModelPredictor import MidpointPredictorModel
-from models.BaseModel import TransctionType
+from models.midpoint.MidpointModelPredictor import MidpointPredictorModel
 
 
 class FullWindowLSTMEncoderDecoderMidpointPredictorModel(MidpointPredictorModel):

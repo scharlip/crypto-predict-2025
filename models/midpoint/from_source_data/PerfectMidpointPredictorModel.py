@@ -1,11 +1,9 @@
-from datetime import datetime, timedelta
-from typing import List, Tuple
+from typing import List
 
 from pandas import DataFrame
 
 from input.SingleStepMidpointCoinDataset import SingleStepMidpointCoinDataset
-from models.MidpointModelPredictor import MidpointPredictorModel
-from models.BaseModel import TransctionType
+from models.midpoint.MidpointModelPredictor import MidpointPredictorModel
 
 
 class PerfectMidpointPredictorModel(MidpointPredictorModel):
