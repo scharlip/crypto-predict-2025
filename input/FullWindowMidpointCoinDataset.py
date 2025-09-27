@@ -27,7 +27,7 @@ class FullWindowMidpointCoinDataset(CoinDataset, Dataset):
                          use_normalized_data=use_normalized_data)
 
     def __len__(self):
-        return len(self.df) - (2 * self.lookback) - 1
+        return len(self.df) - self.lookback - self.lookahead - 1
 
     def __getitem__(self, item):
         if item > len(self.df):
