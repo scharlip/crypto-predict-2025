@@ -23,6 +23,8 @@ LOG_DIR = "{}/logs".format(BASE_DIR)
 lookback = 60
 lookahead = 60
 
+torch.set_default_dtype(torch.float64)
+
 single_step_ds =  SingleStepMidpointCoinDataset(csv_dir = DATA_DIR, coin_type=CoinType.ETH, exchange=Exchange.Coinbase,lookback=lookback, lookahead=lookahead,
                          date_range_filter=[datetime(2024, 12, 28, 0, 0), datetime(2025, 1, 1, 0, 0)])
 full_ds = FullWindowMidpointCoinDataset(csv_dir = DATA_DIR, coin_type=CoinType.ETH, exchange=Exchange.Coinbase, lookback=lookback, lookahead=lookahead,
