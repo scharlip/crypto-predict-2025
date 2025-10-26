@@ -1,7 +1,10 @@
 import random
+from typing import List
+
 import math
 from datetime import timedelta
 
+from pandas import Series
 from tqdm.auto import tqdm
 
 from input.coindataset import CoinDataset
@@ -125,41 +128,76 @@ def run_backtest(ds: CoinDataset, model: BaseModel, transaction_fee_pctg = 0.006
 
     return current_usd_holdings
 
+def check_samples(ds: CoinDataset, indices: List[int], model: MidpointPredictorModel, log_file = None, should_log = True) -> List[float]:
+    if len(indices) < 100:
+        l = indices
+    else:
+        l = tqdm(indices)
+
+    local_average_absolute_diffs = []
+    local_average_pctg_diffs = []
+
+    for idx in l:
+        past_window = ds.df[idx - model.lookback: idx]
+        future_window = ds.df[idx: idx + model.lookahead]
+        future_vals = future_window["Midpoint"].tolist()
+        predicted_vals = model.predict_lookahead_window(past_window)
+
+        absolute_diffs = [math.fabs(predicted_vals[i] - future_vals[i]) for i in range(len(predicted_vals))]
+        pctg_diffs = [absolute_diffs[i] / future_vals[i] for i in range(len(future_vals))]
+
+        average_absolute_diffs_for_idx = sum(absolute_diffs) / len(absolute_diffs)
+        average_pctg_diffs_for_idx = sum(pctg_diffs) / len(pctg_diffs)
+
+        local_average_absolute_diffs.append(average_absolute_diffs_for_idx)
+        local_average_pctg_diffs.append(average_pctg_diffs_for_idx)
+
+    avg_absolute_diff = sum(local_average_absolute_diffs) / len(local_average_absolute_diffs)
+    avg_pctg_diff = sum(local_average_pctg_diffs) / len(local_average_pctg_diffs)
+
+    max_absolute_diff = max(local_average_absolute_diffs)
+    max_pctg_diff = max(local_average_pctg_diffs)
+
+    min_absolute_diff = min(local_average_absolute_diffs)
+    min_pctg_diff = min(local_average_pctg_diffs)
+
+    if should_log:
+        log("Check results: {} checks".format(len(indices)), log_file)
+        log("  Averages: absolute={} percentage={}".format(avg_absolute_diff, avg_pctg_diff), log_file)
+        log("  Minimums: absolute={} percentage={}".format(min_absolute_diff, min_pctg_diff), log_file)
+        log("  Maximums: absolute={} percentage={}".format(max_absolute_diff, max_pctg_diff), log_file)
+
 def spot_check(ds: CoinDataset, model: MidpointPredictorModel, num_spot_checks = 20, seed: int = 42, log_file_name = None, should_log = True):
     log_file = None
     if log_file_name:
         log_file = open(log_file_name, 'w')
 
+    if should_log:
+        log("Running {} spot checks with seed {}.".format(num_spot_checks, seed), log_file)
+
     random.seed(seed)
-    all_absolute_diffs = []
-    all_pctg_diffs = []
+
+    indices = []
     for _ in range(num_spot_checks):
-        idx = random.randint(model.lookahead, len(ds.df))
-        past_window = ds.df[idx - model.lookback : idx]
-        future_window = ds.df[idx : idx + model.lookahead]
-        future_vals = future_window["Midpoint"].tolist()
-        predicted_vals = model.predict_lookahead_window(past_window)
+        indices.append(random.randint(model.lookahead, len(ds.df)))
 
-        absolute_diffs = [math.fabs(predicted_vals[i] - future_vals[i]) for i in range(len(predicted_vals))]
-        pctg_diffs = [absolute_diffs[i]/future_vals[i] for i in range(len(future_vals))]
+    check_samples(ds, indices, model, log_file_name, should_log)
 
-        all_absolute_diffs.extend(absolute_diffs)
-        all_pctg_diffs.extend(pctg_diffs)
+    if log_file:
+        log_file.flush()
+        log_file.close()
 
-    avg_absolute_diff = sum(all_absolute_diffs)/len(all_absolute_diffs)
-    avg_pctg_diff = sum(all_pctg_diffs)/len(all_pctg_diffs)
-
-    max_absolute_diff = max(all_absolute_diffs)
-    max_pctg_diff = max(all_pctg_diffs)
-
-    min_absolute_diff = min(all_absolute_diffs)
-    min_pctg_diff = min(all_pctg_diffs)
+def check_all(ds: CoinDataset, model: MidpointPredictorModel, log_file_name = None, should_log = True):
+    log_file = None
+    if log_file_name:
+        log_file = open(log_file_name, 'w')
 
     if should_log:
-        log("Spot check results: {} spot checks (seed={})".format(num_spot_checks, seed), log_file)
-        log("  Averages: absolute={} percentage={}".format(avg_absolute_diff, avg_pctg_diff), log_file)
-        log("  Minimums: absolute={} percentage={}".format(min_absolute_diff, min_pctg_diff), log_file)
-        log("  Maximums: absolute={} percentage={}".format(max_absolute_diff, max_pctg_diff), log_file)
+        log("Running checks for full dataset ({} samples).".format(len(ds)), log_file)
+
+    indices = list(range(model.lookback, len(ds)))
+
+    check_samples(ds, indices, model, log_file, should_log)
 
     if log_file:
         log_file.flush()
