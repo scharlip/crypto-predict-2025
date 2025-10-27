@@ -9,6 +9,7 @@ from torch.optim import Optimizer
 from tqdm.auto import tqdm
 import statistics
 import math
+import gc
 
 from backtest import backtest
 from input.coindataset import CoinDataset
@@ -68,7 +69,7 @@ def train_loop(
             y_pred = model(X_batch)
             y_pred = y_pred.squeeze()
             loss = loss_fn()(y_pred, y_batch)
-            train_losses.append(math.sqrt(loss))
+            train_losses.append(math.sqrt(loss.item()))
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -109,6 +110,9 @@ def train_loop(
             print("Backtest #{} completed.".format(backtests_run + 1))
             backtests_run += 1
 
+        gc.collect()
+        torch.cuda.empty_cache()
+
     test_errors = []
 
     model.eval()
@@ -134,6 +138,8 @@ def train_loop(
         backtest.run_backtest(ds, model, log_file_name="{}/backtest_final.txt".format(log_dir))
         backtests_run += 1
         print("Final backtest completed.")
+
+    del model, X_batch, y_batch, y_pred
 
     print("Completed training loop.")
 

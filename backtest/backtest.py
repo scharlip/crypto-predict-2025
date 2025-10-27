@@ -181,7 +181,7 @@ def spot_check(ds: CoinDataset, model: MidpointPredictorModel, num_spot_checks =
     for _ in range(num_spot_checks):
         indices.append(random.randint(model.lookahead, len(ds.df)))
 
-    check_samples(ds, indices, model, log_file_name, should_log)
+    check_samples(ds, indices, model, log_file, should_log)
 
     if log_file:
         log_file.flush()
