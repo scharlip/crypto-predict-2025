@@ -10,6 +10,7 @@ from tqdm.auto import tqdm
 import statistics
 import math
 import gc
+from datetime import datetime
 
 from backtest import backtest
 from input.coindataset import CoinDataset
@@ -34,7 +35,8 @@ def train_loop(
     validation_loader = data.DataLoader(validate, shuffle=False, batch_size=batch_size)
     test_loader = data.DataLoader(test, shuffle=False, batch_size=batch_size)
 
-    print("Beginning training loop.")
+    timestamp_str = datetime.now().strftime("%-m/%-d/%Y %-I:%M:%S %p")
+    print("Beginning training loop. ({})".format(timestamp_str))
     print("Model:")
     print(model)
     print("Optimizer: {}".format(optimizer))
@@ -58,7 +60,8 @@ def train_loop(
     for epoch in range(epochs):
         print("Starting epoch {} ...".format(epoch))
 
-        print("Starting training for epoch {} ...".format(epoch))
+        timestamp_str = datetime.now().strftime("%-m/%-d/%Y %-I:%M:%S %p")
+        print("Starting training for epoch {} ... ({})".format(epoch, timestamp_str))
 
         train_losses = []
         model.train()
@@ -74,11 +77,17 @@ def train_loop(
             loss.backward()
             optimizer.step()
 
-        print("Completed training for epoch {}.".format(epoch))
+            del X_batch, y_batch, y_pred
+            gc.collect()
+            torch.cuda.empty_cache()
+
+        timestamp_str = datetime.now().strftime("%-m/%-d/%Y %-I:%M:%S %p")
+        print("Completed training for epoch {}.".format(epoch, timestamp_str))
 
         validation_losses = []
 
-        print("Starting validation for epoch {} ...".format(epoch))
+        timestamp_str = datetime.now().strftime("%-m/%-d/%Y %-I:%M:%S %p")
+        print("Starting validation for epoch {} ... ({})".format(epoch, timestamp_str))
 
         model.eval()
         with torch.no_grad():
@@ -91,11 +100,16 @@ def train_loop(
                 rmse = math.sqrt(loss_fn()(y_pred, y_batch))
                 validation_losses.append(rmse)
 
+                del X_batch, y_batch, y_pred
+                gc.collect()
+                torch.cuda.empty_cache()
+
         avg_train_loss = statistics.fmean(train_losses)
         avg_validation_loss = statistics.fmean(validation_losses)
 
-        print("Completed validation for epoch {}. Avg training RMSE: {} (per batch: {}), Avg validation RMSE: {} (per batch: {})".format(
-            epoch, avg_train_loss/batch_size, avg_train_loss, avg_validation_loss/batch_size, avg_validation_loss))
+        timestamp_str = datetime.now().strftime("%-m/%-d/%Y %-I:%M:%S %p")
+        print("Completed validation for epoch {} ({}). Avg training RMSE: {} (per batch: {}), Avg validation RMSE: {} (per batch: {})".format(
+            epoch, timestamp_str, avg_train_loss/batch_size, avg_train_loss, avg_validation_loss/batch_size, avg_validation_loss))
 
         backtest.spot_check(ds=ds, model=model, log_file_name="{}/spot_check_epoch_{}.txt".format(log_dir, epoch))
 
@@ -105,9 +119,11 @@ def train_loop(
         print("Done with epoch {}.".format(epoch))
 
         if epoch > 0 and epochs_per_backtest is not None and epoch % epochs_per_backtest == 0:
-            print("Running backtest #{} ...".format(backtests_run + 1))
+            timestamp_str = datetime.now().strftime("%-m/%-d/%Y %-I:%M:%S %p")
+            print("Running backtest #{} ... ({})".format(backtests_run + 1, timestamp_str))
             backtest.run_backtest(ds, model, log_file_name="{}/backtest_epoch_{}.txt".format(log_dir, epoch))
-            print("Backtest #{} completed.".format(backtests_run + 1))
+            timestamp_str = datetime.now().strftime("%-m/%-d/%Y %-I:%M:%S %p")
+            print("Backtest #{} completed.".format(backtests_run + 1, timestamp_str))
             backtests_run += 1
 
         gc.collect()
@@ -115,6 +131,8 @@ def train_loop(
 
     test_errors = []
 
+    timestamp_str = datetime.now().strftime("%-m/%-d/%Y %-I:%M:%S %p")
+    print("Starting test ... ({})".format(timestamp_str))
     model.eval()
     with torch.no_grad():
         for X_batch, y_batch in tqdm(test_loader):
@@ -127,19 +145,24 @@ def train_loop(
             test_errors.append(rmse)
 
     avg_test_error = statistics.fmean(test_errors)
+    timestamp_str = datetime.now().strftime("%-m/%-d/%Y %-I:%M:%S %p")
     print(
-        "Completed test. Avg test RMSE: {} (per batch: {})".format(
+        "Completed test ({}). Avg test RMSE: {} (per batch: {})".format(
+            timestamp_str,
             avg_test_error / batch_size, avg_test_error
         )
     )
 
     if epochs_per_backtest is not None and backtests_run == 0:
-        print("Haven't run a backtest yet. Running final backtest ...")
+        timestamp_str = datetime.now().strftime("%-m/%-d/%Y %-I:%M:%S %p")
+        print("Haven't run a backtest yet. Running final backtest ... ({})".format(timestamp_str))
         backtest.run_backtest(ds, model, log_file_name="{}/backtest_final.txt".format(log_dir))
         backtests_run += 1
-        print("Final backtest completed.")
+        timestamp_str = datetime.now().strftime("%-m/%-d/%Y %-I:%M:%S %p")
+        print("Final backtest completed. ({})".format(timestamp_str))
 
     del model, X_batch, y_batch, y_pred
 
-    print("Completed training loop.")
+    timestamp_str = datetime.now().strftime("%-m/%-d/%Y %-I:%M:%S %p")
+    print("Completed training loop. ({})".format(timestamp_str))
 
