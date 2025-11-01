@@ -144,6 +144,10 @@ def train_loop(
             rmse = math.sqrt(loss_fn()(y_pred, y_batch))
             test_errors.append(rmse)
 
+            del X_batch, y_batch, y_pred
+            gc.collect()
+            torch.cuda.empty_cache()
+
     avg_test_error = statistics.fmean(test_errors)
     timestamp_str = datetime.now().strftime("%-m/%-d/%Y %-I:%M:%S %p")
     print(
@@ -161,7 +165,9 @@ def train_loop(
         timestamp_str = datetime.now().strftime("%-m/%-d/%Y %-I:%M:%S %p")
         print("Final backtest completed. ({})".format(timestamp_str))
 
-    del model, X_batch, y_batch, y_pred
+    del model
+    gc.collect()
+    torch.cuda.empty_cache()
 
     timestamp_str = datetime.now().strftime("%-m/%-d/%Y %-I:%M:%S %p")
     print("Completed training loop. ({})".format(timestamp_str))
