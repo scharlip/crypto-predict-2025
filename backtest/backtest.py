@@ -7,8 +7,9 @@ from datetime import timedelta
 from pandas import Series
 from tqdm.auto import tqdm
 
+from backtest.decision import MixedTransactionDecisionHeuristic, TransactionDecision, TransctionType
 from input.coindataset import CoinDataset
-from models.BaseModel import BaseModel, TransctionType
+from models.BaseModel import BaseModel
 from models.midpoint.MidpointModelPredictor import MidpointPredictorModel
 
 def log(msg: str, log_file):
@@ -18,7 +19,14 @@ def log(msg: str, log_file):
     else:
         print(msg + "\n")
 
-def run_backtest(ds: CoinDataset, model: BaseModel, transaction_fee_pctg = 0.006, log_file_name = None, should_log = True) -> float:
+def run_backtest(
+        ds: CoinDataset,
+        model: BaseModel,
+        transaction_fee_pctg = 0.006,
+        log_file_name = None,
+        should_log = True,
+        transaction_decision_heuristic = MixedTransactionDecisionHeuristic()
+) -> float:
 
     log_file = None
     if log_file_name:
@@ -41,15 +49,20 @@ def run_backtest(ds: CoinDataset, model: BaseModel, transaction_fee_pctg = 0.006
         current_price = ds.df.iloc[current_idx]["Midpoint"].tolist()
         current_time = ds.df.iloc[current_idx]["Open time"].to_pydatetime()
 
-        transaction_info = model.buy_sell_hold_decision(
-            current_time,
+        predicted_future_window: List[float] = model.predict_lookahead_window(past_window)
+
+        transaction_decision: TransactionDecision = transaction_decision_heuristic.decision(
             past_window,
+            predicted_future_window,
+            current_time,
             last_purchased_price,
-            current_usd_holdings > 0.0
+            current_usd_holdings > 0.0,
+            transaction_fee_pctg
         )
 
-        transaction_type = transaction_info[0]
-        timestamp_for_transaction = transaction_info[1]
+        transaction_type = transaction_decision.type
+        timestamp_for_transaction = transaction_decision.timestamp
+        reason = transaction_decision.reason
 
         if transaction_type == TransctionType.Buy and timestamp_for_transaction <= current_time:
             prev_usd_holdings = current_usd_holdings
@@ -60,12 +73,13 @@ def run_backtest(ds: CoinDataset, model: BaseModel, transaction_fee_pctg = 0.006
             current_usd_holdings = 0.0
 
             if should_log:
-                log("\nBought coins at a price of {}. USD: {} -> {}, Coin: {} -> {} (Step: {}, Total time elapsed: {})".format(
+                log("\nBought coins at a price of {}. USD: {} -> {}, Coin: {} -> {} (Step: {}, Total time elapsed: {}, Reason: {})".format(
                     current_price,
                     prev_usd_holdings, current_usd_holdings,
                     prev_coin_holdings, current_coin_holdings,
                     current_idx,
                     str(timedelta(minutes=current_idx)),
+                    reason
                 ), log_file)
 
             last_purchased_price = current_price
@@ -85,12 +99,13 @@ def run_backtest(ds: CoinDataset, model: BaseModel, transaction_fee_pctg = 0.006
                 else:
                     gain_loss_msg = "NET LOSS"
 
-                log("\nSold coins at a price of {}. USD: {} -> {}, Coin: {} -> {} (Held for: {}, Total time elapsed: {}, Step: {}) {}".format(
+                log("\nSold coins at a price of {}. USD: {} -> {}, Coin: {} -> {} (Held for: {}, Total time elapsed: {}, Reason: {}, Step: {}) {}".format(
                     current_price,
                     prev_usd_holdings, current_usd_holdings,
                     prev_coin_holdings, current_coin_holdings,
                     str(current_time - last_purchased_time),
                     str(timedelta(minutes = current_idx)),
+                    reason,
                     current_idx,
                     gain_loss_msg
                 ), log_file)
